@@ -13,9 +13,9 @@ renderSemiretta tsp ts = Pictures . toList $ zipTreeWith (flip ($)) ts tsp
 
 renderFilm  :: Tree (Semiretta -> Picture) ->  [Tree Semiretta] -> Tempo -> Tempo -> Picture
 renderFilm tp ts tmax = let
-	l = length ts
-	dt = tmax / (fromIntegral l)
-	tsr = map (renderSemiretta tp) ts
-	in \t -> tsr !! (floor (t/dt) `mod` l)
+  l = length ts
+  dt = tmax / (fromIntegral l)
+  tsr = map (renderSemiretta tp) ts
+  in \t -> tsr !! (floor (t/dt) `mod` l)
 
 
