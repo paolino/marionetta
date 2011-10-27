@@ -1,38 +1,28 @@
 -- | Some useful functions to work with Data.Tree.Tree
-module Data.Tree.Missing (TreePath, recurseTreeAccum, replaceTreeNode, zipTreeWith, modifyNode, coords, pick) where
-
+module Data.Tree.Missing ( recurseTreeAccum, zipTreeWith, modifyPosition,inspectPosition, inspectTop, modifyTop) where
 import Data.List (splitAt)
 import Data.Tree
 import Control.Monad.State (evalState, get , put, when)
 import Control.Applicative
-import Data.Traversable
-import Data.Foldable
 import Control.Arrow
 ------------------------------------------------------------
-coords :: Eq a => a -> Tree a -> Maybe TreePath
-coords s (Node s' ns) 
-	| s == s' = Just []
-	| otherwise = msum . zipWith (\n -> fmap (n:)) [0..] $ map (coords s) ns
-
-pick :: TreePath -> Tree a -> Maybe a
-pick [] (Node x _) = Just x
-pick (n:ns) (Node x ts) = case drop n ts of
-	[] -> Nothing
-	(y:_) -> pick ns y
 
 
-replaceNodeList :: Int -> [a] -> (a,a -> [a])
-replaceNodeList n xs = case splitAt n xs of
-   (_,[]) -> error "path to a non-existent node"
-   (us,x:vs)  -> (x,\x -> us ++ [x] ++ vs)
 
-type TreePath = [Int]
 
-replaceTreeNode :: (Tree a -> Tree a) -> TreePath -> Tree a -> Tree a
-replaceTreeNode f ns x = replaceNode' ns x where
-   replaceNode' [] x = f x
-   replaceNode' (n:ns) (Node a ts) = Node a . g $ replaceNode' ns t
-      where (t,g) = replaceNodeList n ts
+zipTreeWith f (Node x xs) (Node y ys) = Node (f x y) $ zipWith (zipTreeWith f) xs ys
+
+inspectPosition :: (a -> Bool) -> Tree a -> Tree b -> [b]
+inspectPosition j t tb = replace' (t,tb)  where
+	replace' (Node x xs, Node y ys)
+		| j x = [y]
+                | otherwise = concatMap replace' $ zip xs ys
+
+modifyPosition :: (a -> Bool) -> Tree a -> Tree b -> (b -> b) -> Tree b
+modifyPosition j t tb f = replace' (t,tb)  where
+	replace' (Node x xs, Node y ys)
+		| j x = Node (f y) ys
+                | otherwise = Node y . map replace' $ zip xs ys
 
 recurseTreeAccum :: b -> (b -> a -> (b,c)) -> Tree a -> Tree c
 recurseTreeAccum x f n = recurse' x n where
@@ -41,16 +31,5 @@ recurseTreeAccum x f n = recurse' x n where
     ns' = map (recurse' x') ns
     in Node z ns'
 
-modifyNode :: (a -> a) -> Tree a -> Tree a
-modifyNode f (Node x ns) = Node (f x) ns
-
-zipTreeWith :: (a -> b -> c) -> Tree a -> Tree b -> Tree c
-zipTreeWith f t1 t2 = evalState (traverse g t1) $ toList t2
-  where
-  g x  = do
-    ys <- get
-    when (null ys) $ error "zipping on trees with different shape"
-    put $ tail ys
-    return $ f x (head ys)
-
-
+inspectTop (Node x _) = x
+modifyTop f (Node x xs) = Node (f x) xs

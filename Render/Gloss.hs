@@ -6,7 +6,6 @@ import Data.Tree.Missing (zipTreeWith)
 import Data.Foldable (toList)
 import Model
 
-type Tempo = Float
 
 renderSemiretta :: Tree (Semiretta -> Picture) -> Tree Semiretta ->  Picture
 renderSemiretta tsp ts = Pictures . toList $ zipTreeWith (flip ($)) ts tsp

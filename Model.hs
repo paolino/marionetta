@@ -1,7 +1,7 @@
 module Model where -- (Punto (..), Semiretta (..), Angolo , TreePath, Tree, Accelerazione, configura, film) where
 
 import Data.Tree (Tree)
-import Data.Tree.Missing (replaceTreeNode, zipTreeWith, recurseTreeAccum, TreePath, modifyNode, pick)
+import Data.Tree.Missing ( zipTreeWith, recurseTreeAccum, modifyPosition,  inspectTop, modifyTop)
 import Control.Applicative ((<$>))
 import Data.Foldable (toList)
 
@@ -55,17 +55,19 @@ movimento  (Movimento rot tras) (r,s)= let
 
 data Interpolazione = Interpolazione (Tempo -> Spostamento) (Tree (Tempo -> Angolo))
 
-mkInterpolazione :: Tree Semiretta -> Tree Semiretta -> Interpolazione
+mkInterpolazione ::  Tree Semiretta -> Tree Semiretta -> Interpolazione
 mkInterpolazione t1 t2  = Interpolazione (\t -> \q -> q + t `scale` (p - q)) (zipTreeWith f t1 t2) where
 	f (Semiretta _ x) (Semiretta _ y) t = x + t * (y - x)
-	Semiretta p _ = maybe (error "albero vuoto") id $ pick [] t1
-	Semiretta q _ = maybe (error "albero vuoto") id $ pick [] t2
+	Semiretta p _ = inspectTop t1
+	Semiretta q _ = inspectTop t2
 	scale t (Punto (x,y)) = Punto (t * x, t * y)
 
 interpola :: Interpolazione -> Tree Semiretta -> Tempo -> Tree Semiretta
 interpola (Interpolazione tras trots) ts t = recurseTreeAccum (Movimento (tras t) id) movimento ts' where
 	ts' = zipTreeWith (\ta s -> (ta t, s)) trots ts
 
+modificatore :: Semiretta -> Tree Semiretta -> Tree b -> (b -> b) -> Tree b
+modificatore s t t' f = modifyPosition (== s) t t' f
 
 sigmoide :: Float -> Float
 sigmoide t = 1/ (1 + exp (-t))
@@ -80,16 +82,4 @@ film 	:: Accelerazione 	-- ^ strappo dei movimenti
 film l xs = do
 	((_,x),(n,y)) <- zip xs (tail xs)
 	interpola (mkInterpolazione x y) x . sigmoide <$>  take n [-l/2,(-l/2) + l/fromIntegral n..]
-{-
-regolaAngolo :: Angolo -> Tree Semiretta -> Tree Semiretta
-regolaAngolo alpha = movimento id () . modifyNode f . fmap g where
-	f (Semiretta p y,_) = (Semiretta p y, \() -> y + alpha) 
-	g s@(Semiretta p y) = (s,const y)
--- | imposta un angolo di una specifica semiretta in un grafo di semirette
-configura 	:: Angolo 	-- ^ valore assoluto dell'angolo in gradi
-		-> TreePath 	-- ^ percorso per la semiretta nel grafo , contando le dipendenze da sinistra
-		-> Tree Semiretta 	-- ^ grafo di semirette da correggere
-		-> Tree Semiretta	-- ^ grafo corretto
-configura alpha tp tr = replaceTreeNode (regolaAngolo alpha) tp tr
--}
 
