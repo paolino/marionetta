@@ -6,13 +6,17 @@ license: BSD3
 license-file: LICENSE
 copyright:
 maintainer: paolo.veronelli@gmail.com
-build-depends: base -any, mtl -any, containers -any, gloss -any
+build-depends: base -any, containers -any, gloss -any, mtl -any
 stability:
 homepage: https://github.com/paolino/marionetta
 package-url:
 bug-reports:
 synopsis: a framework to simulate marionetta movements
 description:
+             .
+             .
+             .
+             .
 category: Data
 author: Paolo Veronelli
 tested-with:
@@ -20,9 +24,8 @@ data-files:
 data-dir: ""
 extra-source-files:
 extra-tmp-files:
- 
-executable: Marionetta
-main-is: Marionetta.hs
+exposed-modules: Data.Tree.Missing Linguaggio Model
+exposed: True
 buildable: True
 build-tools:
 cpp-options:
@@ -42,10 +45,11 @@ includes:
 install-includes:
 include-dirs:
 hs-source-dirs: .
-other-modules: Model Data.Tree.Missing
+other-modules:
 ghc-prof-options:
 ghc-shared-options:
 ghc-options:
 hugs-options:
 nhc98-options:
 jhc-options:
+
