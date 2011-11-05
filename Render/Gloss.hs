@@ -7,8 +7,10 @@ import Data.Foldable (toList)
 import Model
 
 
+
+
 renderSemiretta :: Tree (Semiretta -> Picture) -> Tree Semiretta ->  Picture
-renderSemiretta tsp ts = Pictures . toList $ zipTreeWith (flip ($)) ts tsp
+renderSemiretta tsp ts = Pictures . toList $ zipTreeWith ($) tsp (assolutizza ts)
 
 renderFilm  :: Tree (Semiretta -> Picture) ->  [Tree Semiretta] -> Tempo -> Tempo -> Picture
 renderFilm tp ts tmax = let

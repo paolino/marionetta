@@ -6,7 +6,7 @@ license: BSD3
 license-file: LICENSE
 copyright:
 maintainer: paolo.veronelli@gmail.com
-build-depends: gloss -any, containers -any, mtl -any, base -any
+build-depends: base -any, mtl -any, containers -any, gloss -any
 stability:
 homepage: https://github.com/paolino/marionetta
 package-url:
@@ -20,7 +20,7 @@ data-files:
 data-dir: ""
 extra-source-files:
 extra-tmp-files:
-
+ 
 executable: Marionetta
 main-is: Marionetta.hs
 buildable: True
@@ -42,7 +42,7 @@ includes:
 install-includes:
 include-dirs:
 hs-source-dirs: .
-other-modules: Model Graphics.Gloss Data.Tree.Missing
+other-modules: Model Data.Tree.Missing
 ghc-prof-options:
 ghc-shared-options:
 ghc-options:

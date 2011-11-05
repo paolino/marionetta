@@ -1,17 +1,25 @@
+{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE EmptyDataDecls #-}
+
 module Model where -- (Punto (..), Semiretta (..), Angolo , TreePath, Tree, Accelerazione, configura, film) where
 
-import Data.Tree (Tree)
-import Data.Tree.Missing ( zipTreeWith, recurseTreeAccum, modifyPosition,  inspectTop, modifyTop)
+import Data.Tree (Tree(..))
+import Data.Tree.Missing ( zipTreeWith, recurseTreeAccum,  ispettore , Ispettore, moveTop)
 import Control.Applicative ((<$>))
-import Data.Foldable (toList)
+import Control.Monad (ap)
+import Data.Foldable (minimumBy, toList)
+import Data.List.Zipper
+import Data.Ord (comparing)
+import Control.Arrow (Arrow(..))
 
-
--- | un punto nel piano 2d ascissa e ordinata
+-- | un punto nel piano 2d ascissa e ordinata o anche un vettore
 newtype Punto = Punto (Float,Float) deriving (Eq,Show, Read)
 
 -- | un angolo
 type Angolo = Float
 
+-- campo dei Punto
 instance Num Punto where
 	(+) (Punto (x,y)) (Punto (x1,y1)) = Punto (x+x1,y+y1)
 	negate (Punto (x,y)) = Punto (negate x,negate y)
@@ -20,66 +28,66 @@ instance Num Punto where
 	signum = error "Punto Num method undefined used"
 	fromInteger = error "Punto Num method undefined used"
 
--- Calcola le coordinate del punto ruotato di un angolo rispetto ad un punto data
-ruota :: Punto -> Angolo -> Punto -> Punto
-ruota q x p = let
-	Punto (a,o)  = p - q
-	z = x*pi/180 + atan2 o a
-	r = sqrt (a ^ 2 + o ^ 2)
-        in q + Punto (r * cos z, r * sin z)
 
--- | Astrazione minima per un elemento solido in 2 dimensioni
-data Semiretta = Semiretta Punto Angolo deriving (Show,Read, Eq)
+type Ruota = Punto -> Punto
 
-type Tempo = Float
+-- rotazione intorno all'origine
+ruota :: Angolo -> Ruota
+ruota alpha (Punto (x,y))= let
+    a = alpha * pi / 180
+    in Punto (cos a * x - sin a * y, sin a * x + cos a * y)
 
-type Spostamento = Punto -> Punto
+-- modulo di un vettore
+modulus :: Punto -> Float
+modulus (Punto (x,y)) = sqrt (x ^ 2 + y ^ 2)
 
-spostamento :: Spostamento -> Semiretta -> Semiretta
-spostamento f (Semiretta p t) = Semiretta (f p) t
+data Relativo
+data Assoluto
 
-rotazione :: Angolo -> Semiretta -> (Semiretta, Spostamento)
-rotazione r (Semiretta p t) = (Semiretta p r, ruota p (r - t))
+data Pezzo a where
+    Relativo :: Punto -> Punto -> Pezzo Relativo
+    Assoluto :: Punto -> Punto -> Pezzo Assoluto
 
 
-spiazzamento :: Semiretta -> Semiretta -> Spostamento
-spiazzamento (Semiretta q0 t) (Semiretta q1 r) p = p + (q1 - q0)
+isometrica  :: Pezzo a -> (Punto, Angolo)
+isometrica (Assoluto c o) = (o, atan2 y x) where
+    Punto (x,y) = o - c
+isometrica (Relativo c o) = isometrica (Assoluto c o)
 
-data Movimento = Movimento Spostamento Spostamento
+assolutizza :: Tree (Pezzo Relativo) -> Tree (Pezzo Assoluto)
+assolutizza = recurseTreeAccum (Punto (0,0)) f    where
+    f q (Relativo c o) = (qc, Assoluto qc (o + q)) where qc = q + c
 
--- | core logic 
-movimento :: Movimento -> (Angolo ,Semiretta) -> (Movimento, Semiretta)
-movimento  (Movimento rot tras) (r,s)= let
-   (s', rot') = rotazione r . spostamento rot . spostamento tras $ s
-   in ( Movimento rot' (spiazzamento s s'), s')
+-- prepara le ispezioni del pezzo nell'albero più vicino al punto dato
+vicino :: Punto -> Tree (Pezzo Assoluto) -> Ispettore
+vicino x tr = ispettore ch tr where
+    x' = minimumBy (comparing $ modulus . abs . subtract x) . toList . fmap (fst . isometrica) $ tr
+    ch (Assoluto _ o) = o == x'
 
-data Interpolazione = Interpolazione (Tempo -> Spostamento) (Tree (Tempo -> Angolo))
+-- ruota il solo pezzo specificato dall'ispettore
+ruotaScelto :: Ispettore -> Angolo -> Tree (Pezzo Relativo) -> Tree (Pezzo Relativo)
+ruotaScelto m alpha tr = aggiorna . (\t -> fst (m  t) (\(_,p) -> (alpha,p))) . fmap ((,) 0) $ tr
 
-mkInterpolazione ::  Tree Semiretta -> Tree Semiretta -> Interpolazione
-mkInterpolazione t1 t2  = Interpolazione (\t -> \q -> q + t `scale` (p - q)) (zipTreeWith f t1 t2) where
-	f (Semiretta _ x) (Semiretta _ y) t = x + t * (y - x)
-	Semiretta p _ = inspectTop t1
-	Semiretta q _ = inspectTop t2
-	scale t (Punto (x,y)) = Punto (t * x, t * y)
+-- ruota tutti i pezzi dell'angolo assegnato
+aggiorna :: Tree (Angolo, Pezzo Relativo) -> Tree (Pezzo Relativo)
+aggiorna = recurseTreeAccum id ruotaPezzo where
+    ruotaPezzo :: Ruota -> (Angolo, Pezzo Relativo) -> (Ruota, Pezzo Relativo)
+    ruotaPezzo r (alpha, Relativo c o) = let r' = ruota alpha in (r', Relativo (r c) (r' o))
 
-interpola :: Interpolazione -> Tree Semiretta -> Tempo -> Tree Semiretta
-interpola (Interpolazione tras trots) ts t = recurseTreeAccum (Movimento (tras t) id) movimento ts' where
-	ts' = zipTreeWith (\ta s -> (ta t, s)) trots ts
+passoInterpolazione  ::  Int -> Tree (Pezzo a) -> Tree (Pezzo a)
+    -> Tree (Pezzo Relativo)
+    -> Tree (Pezzo Relativo)
+passoInterpolazione n t1 t2  = aggiorna . zipTreeWith (,) (zipTreeWith variazioneAngolo  t1 t2) where
+    variazioneAngolo p p' = f p' - f p where f = snd . isometrica
 
-modificatore :: Semiretta -> Tree Semiretta -> Tree b -> (b -> b) -> Tree b
-modificatore s t t' f = modifyPosition (== s) t t' f
+interpolazione  ::  Int -> Tree (Pezzo Relativo) -> Tree (Pezzo Relativo)  -> [Tree (Pezzo Relativo)]
+interpolazione n t1 t2 = iterate  (passoInterpolazione n t1 t2) $ t1
 
-sigmoide :: Float -> Float
-sigmoide t = 1/ (1 + exp (-t))
+spostaFulcro :: Punto ->Punto -> Tree (Pezzo Assoluto) -> Maybe (Tree (Pezzo  Assoluto))
+spostaFulcro  n p = moveTop k (\(Assoluto c _ ) -> c == n) (Assoluto p undefined) where
+    k (Assoluto c _) (Assoluto c' o') = Assoluto c o'
 
--- | controlla lo strappo dei movimenti (valori > 0)
-type Accelerazione = Float
 
--- | costruisce una sequenza di grafi che interpolano i grafi dati, assegnando il numero di passi indicato per ogni passaggio
-film 	:: Accelerazione 	-- ^ strappo dei movimenti
-	-> [(Int,Tree Semiretta)] -- ^ sequenza di configurazioni con i passi necessari a raggiungerla dalla precedente
-	-> [Tree Semiretta]	-- ^ sequenza di grafi
-film l xs = do
-	((_,x),(n,y)) <- zip xs (tail xs)
-	interpola (mkInterpolazione x y) x . sigmoide <$>  take n [-l/2,(-l/2) + l/fromIntegral n..]
+
+
 
