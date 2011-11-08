@@ -13,6 +13,7 @@ import Data.Foldable (minimumBy, toList)
 import Data.List.Zipper
 import Data.Ord (comparing)
 import Control.Arrow (Arrow(..))
+import Debug.Trace
 
 -- | un punto nel piano 2d ascissa e ordinata o anche un vettore
 newtype Punto = Punto (Float,Float) deriving (Eq,Show, Read)
@@ -25,18 +26,16 @@ instance Num Punto where
 	(+) (Punto (x,y)) (Punto (x1,y1)) = Punto (x+x1,y+y1)
 	negate (Punto (x,y)) = Punto (negate x,negate y)
 	(*) = error "Punto Num method undefined used"
-	abs = error "Punto Num method undefined used"
-	signum = error "Punto Num method undefined used"
-	fromInteger = error "Punto Num method undefined used"
+	abs x = error $ "abs :" ++ show x ++  " Punto Num method undefined used"
+	signum = error "signum : Punto Num method undefined used"
+	fromInteger x = error $ "fromInteger " ++ show x ++ ": Punto Num method undefined used"
 
 
 type Ruota = Punto -> Punto
 
 -- rotazione intorno all'origine
 ruota :: Angolo -> Ruota
-ruota alpha (Punto (x,y))= let
-    a = alpha * pi / 180
-    in Punto (cos a * x - sin a * y, sin a * x + cos a * y)
+ruota alpha (Punto (x,y))= Punto (cos alpha * x - sin alpha * y, sin alpha * x + cos alpha * y)
 
 -- modulo di un vettore
 modulus :: Punto -> Float
@@ -59,18 +58,18 @@ polare (Pezzo c (Right alpha)) = (c,alpha)
 
 assolutizza :: Tree (Pezzo Relativo) -> Tree (Pezzo Assoluto)
 assolutizza = recurseTreeAccum (Punto (0,0)) f    where
-    f q (Pezzo c (Left o)) = (qc, Pezzo qc $ Left (o + q)) where qc = q + c
+    f q (Pezzo c (Left o)) = (qc, Pezzo qc $ Left (o + c)) where qc = q + c
     f q (Pezzo c alpha) = (qc, Pezzo qc alpha) where qc = q + c
 
 relativizza :: Tree (Pezzo Assoluto) -> Tree (Pezzo Relativo)
 relativizza = recurseTreeAccum (Punto (0,0)) f    where
-    f q (Pezzo c (Left o)) = (c, Pezzo qc $ Left (o - q)) where qc = c - q
+    f q (Pezzo c (Left o)) = (c, Pezzo qc $ Left (o - c)) where qc = c - q
     f q (Pezzo c alpha) = (c, Pezzo (c - q) alpha)
 
 -- prepara le ispezioni del pezzo nell'albero più vicino al punto dato
 vicino :: Punto -> Tree (Pezzo Assoluto) -> Ispettore b
 vicino x tr = ispettore ch tr where
-    x' = minimumBy (comparing $ modulus . abs . subtract x) . toList . fmap (fst . polare) $ tr
+    x' = minimumBy (comparing $ modulus .  subtract x) . toList . fmap (fst . polare) $ tr
     ch (Pezzo _ (Left o)) = o == x'
     ch (Pezzo c alpha) = c == x'
 

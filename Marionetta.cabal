@@ -12,9 +12,7 @@ homepage: https://github.com/paolino/marionetta
 package-url:
 bug-reports:
 synopsis: a framework to simulate marionetta movements
-description:
-             .
-             .
+description: .
              .
              .
 category: Data
@@ -24,8 +22,37 @@ data-files:
 data-dir: ""
 extra-source-files:
 extra-tmp-files:
-exposed-modules: Data.Tree.Missing Linguaggio Model
+exposed-modules: Data.Tree.Missing Interfaccia Linguaggio Model
 exposed: True
+buildable: True
+build-tools:
+cpp-options:
+cc-options:
+ld-options:
+pkgconfig-depends:
+frameworks:
+c-sources:
+default-language:
+other-languages:
+default-extensions:
+other-extensions:
+extensions:
+extra-libraries:
+extra-lib-dirs:
+includes:
+install-includes:
+include-dirs:
+hs-source-dirs: .
+other-modules:
+ghc-prof-options:
+ghc-shared-options:
+ghc-options:
+hugs-options:
+nhc98-options:
+jhc-options:
+
+executable: marionetta
+main-is: Marionetta.hs
 buildable: True
 build-tools:
 cpp-options:

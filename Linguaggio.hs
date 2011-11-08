@@ -14,9 +14,7 @@
 
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Linguaggio (
-
-) where
+module Linguaggio  where
 
 import Data.Tree (Tree)
 import Model
@@ -32,7 +30,7 @@ import Data.Tree.Missing
        (zipTreeWith, ricentratore, Ricentratore, labella)
 import Data.Foldable (toList)
 
-
+import Debug.Trace
 
 
 
@@ -60,7 +58,8 @@ data Sequenza b = Sequenza
     }
 
 deserializza :: Serializzazione -> [Sequenza b]
-deserializza (Serializzazione f0 ps) = zipWith f (f0 : map nuovaFigura ps) ps where
+deserializza s@(Serializzazione f0 ps) =  ss where
+    ss = zipWith f (f0 : map nuovaFigura ps) ps where
     rif = labella [0..] f0
     f f0 (Passo f1 t n c) = Sequenza (r' f0) (r' f1) (r undefined (const id)) t
         where       r = ricentratore n rif :: Ricentratore b
@@ -69,13 +68,14 @@ deserializza (Serializzazione f0 ps) = zipWith f (f0 : map nuovaFigura ps) ps wh
     gp (Pezzo c _) (Pezzo _ o) = Pezzo c o
 
 
-type Renderer b = (Punto, Angolo) -> b
+type Renderer b = ((Punto, Angolo), Punto) -> b
 
 type Rendering b = Tree (Renderer b)
 
 renderFigura :: Rendering b -> Figura -> [b]
-renderFigura r = toList . zipTreeWith f r . assolutizza where
-    f g p = g . polare $ p
+renderFigura r x = trace (show x) . toList . zipTreeWith f r . assolutizza $ x where
+    f g p@(Pezzo c o) = g $ (polare $ p,c)
+
 
 renderSequenza :: Rendering b -> Sequenza (Renderer b) -> Tempo Assoluto -> Tempo Assoluto -> [b]
 renderSequenza re (Sequenza f0 f1 r dt) t0 t = renderFigura (r re) . interpolazione f0 f1 $ (t .-. t0) ./. dt
