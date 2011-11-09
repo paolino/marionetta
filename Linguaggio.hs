@@ -16,25 +16,27 @@
 
 module Linguaggio  where
 
+import Prelude hiding (zipWith)
 import Data.Tree (Tree)
 import Model
        (Angolo, assolutizza, relativizza, interpolazione, Assoluto,
         Punto(..), Pezzo(..), Pezzo, Relativo, Tempo(..), (.-.), (.+.),
-        (./.), Normalizzato)
+        (./.), Normalizzato,renderFigura, Renderer, Rendering, Figura)
 import Data.List (mapAccumL)
 import Control.Arrow (Arrow(..))
 import Data.Maybe (catMaybes, fromJust, isJust)
 import Control.Applicative ((<$>), liftA2)
 import Control.Monad (liftM2)
 import Data.Tree.Missing
-       (zipTreeWith, ricentratore, Ricentratore, labella)
+       ( ricentratore, Ricentratore, labella)
 import Data.Foldable (toList)
-
+import Data.Zip
 import Debug.Trace
 
 
 
-type Figura = Tree (Pezzo Relativo)
+
+
 type Nome = Int
 
 data Passo     = Passo
@@ -66,18 +68,9 @@ deserializza s@(Serializzazione f0 ps) =  ss where
                     r' = relativizza . r (Pezzo c undefined undefined) gp . assolutizza
     gp :: Pezzo Assoluto -> Pezzo Assoluto -> Pezzo Assoluto
     gp (Pezzo c _ _) (Pezzo _ o alpha) = Pezzo c o alpha
-
-
-type Renderer b = Pezzo Assoluto -> b
-
-type Rendering b = Tree (Renderer b)
-
-renderFigura :: Rendering b -> Figura -> [b]
-renderFigura r x = trace (show x) . toList . zipTreeWith ($) r . assolutizza $ x
-
-
-
 renderSequenza :: Rendering b -> Sequenza (Renderer b) -> Tempo Assoluto -> Tempo Assoluto -> [b]
 renderSequenza re (Sequenza f0 f1 r dt) t0 t = renderFigura (r re) . interpolazione f0 f1 $ (t .-. t0) ./. dt
+
+
 
 

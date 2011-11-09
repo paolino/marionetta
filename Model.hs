@@ -5,8 +5,9 @@
 
 module Model where -- (Punto (..), Semiretta (..), Angolo , TreePath, Tree, Accelerazione, configura, film) where
 
+import Prelude hiding (zipWith)
 import Data.Tree (Tree(..))
-import Data.Tree.Missing ( zipTreeWith, recurseTreeAccum,  ispettore , Ispettore)
+import Data.Tree.Missing ( recurseTreeAccum)
 import Control.Applicative ((<$>))
 import Control.Monad (ap)
 import Data.Foldable (minimumBy, toList)
@@ -14,6 +15,7 @@ import Data.List.Zipper
 import Data.Ord (comparing)
 import Control.Arrow (Arrow(..))
 import Debug.Trace
+import Data.Zip
 
 -- | un punto nel piano 2d ascissa e ordinata o anche un vettore
 newtype Punto = Punto (Float,Float) deriving (Eq,Show, Read)
@@ -64,13 +66,13 @@ relativizza = recurseTreeAccum (Punto (0,0)) f    where
     f q (Pezzo c o alpha) = (c, Pezzo (c - q) (o - c) alpha)
 
 -- prepara le ispezioni del pezzo nell'albero più vicino al punto dato
-vicino :: Punto -> Tree (Pezzo Assoluto) -> Ispettore b
-vicino x tr = ispettore ch tr where
+vicino :: Punto -> Tree (Pezzo Assoluto) -> Selector Tree b
+vicino x tr = mkSelector ch tr where
     x' = minimumBy (comparing $ modulus .  subtract x) . toList . fmap originePezzo $ tr
     ch (Pezzo _ o _) = o == x'
 
 -- ruota il solo pezzo specificato dall'ispettore
-ruotaScelto :: Ispettore (Angolo, Pezzo Relativo) -> Angolo -> Tree (Pezzo Relativo) -> Tree (Pezzo Relativo)
+ruotaScelto :: Selector Tree (Angolo, Pezzo Relativo) -> Angolo -> Tree (Pezzo Relativo) -> Tree (Pezzo Relativo)
 ruotaScelto m alpha tr = aggiorna . (\t -> fst (m  t) (\(_,p) -> (alpha,p))) . fmap ((,) 0) $ tr
 
 -- ruota tutti i pezzi dell'angolo assegnato
@@ -98,8 +100,16 @@ interpolazione      :: Tree (Pezzo Relativo)
                     -> Tree (Pezzo Relativo)
                     -> Tempo Normalizzato
                     -> Tree (Pezzo Relativo)
-interpolazione t1 t2 t = aggiorna $ zipTreeWith variazioneAngolo  t1 t2 where
+interpolazione t1 t2 t = aggiorna $ zipWith variazioneAngolo  t1 t2 where
     variazioneAngolo p p' = ((rotazionePezzo p' - rotazionePezzo p) /  tempo t, p)
+type Figura = Tree (Pezzo Relativo)
+type Renderer b = Pezzo Assoluto -> b
+
+type Rendering b = Tree (Renderer b)
+
+renderFigura :: Rendering b -> Figura -> [b]
+renderFigura r x =  toList . zipWith ($) r . assolutizza $ x
+
 
 
 

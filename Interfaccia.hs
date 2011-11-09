@@ -7,36 +7,55 @@ module Interfaccia where
 
 
 import Linguaggio
-       (deserializza, Sequenza(..), renderFigura, Rendering,
-        Serializzazione(..))
-import Data.Tree.Missing (Ispettore)
+       ( Passo(..), deserializza, Sequenza(..) , Serializzazione(..))
 import Graphics.Gloss
-       (line, displayInWindow, Picture, white, gameInWindow)
-import Model (Relativo, Pezzo(..))
+       (greyN, color, green, line, displayInWindow, Picture, white,
+        gameInWindow)
+import Model (Relativo, Pezzo(..), Figura, renderFigura, Rendering)
 import Graphics.Gloss.Interface.Game (Event)
 import Graphics.Gloss.Data.Picture (Picture(..))
 import Debug.Trace
+import Data.Zip (Selector)
+import Data.Tree (Tree)
+import Data.List.Zipper (valore, elementi, Zipper(..))
+
+
+data IFigura = IFigura
+    {   ifigura :: Figura
+    ,   irotazione :: Selector Tree (Pezzo Relativo)
+    ,   ipov :: Figura -> Figura
+    }
+
+type Cardini = Zipper IFigura
 
 
 data World = World
-    {   persistente :: Serializzazione
-    ,   volatile :: forall b . Maybe (Ispettore b)
-    ,   rendereringWorld :: Rendering Picture
+    {   cardini :: Cardini
+    ,   renderering :: Rendering Picture
     }
 
+-----------------------------   rendering ---------------------------------------------
+renderIFigura re = Pictures . renderFigura re . ifigura
+croce = Color green $ Pictures [line [(-200,0),(200,0)], line [(0,200),(0,-200)]]
 renderWorld :: World -> Picture
-renderWorld (World se Nothing re ) = let
-    ps = concatMap (renderFigura re . partenza) ss
-    ss = deserializza se
-    in Pictures ([line [(-100,0),(100,0)], line [(0,100),(0,-100)]] ++ ps)
+renderWorld (World ca re ) = let
+    ps =  Pictures . map (renderIFigura re) $ elementi  ca
+    actual = (renderIFigura re) $ valore ca
+    in Pictures [croce,color (greyN 0.5) ps, color (greyN 0.1) actual]
+
+
+
+-----------------------------  input ---------------------------------------------------
 
 changeWorld :: Event -> World -> World
 changeWorld = const id
 
+
+----------------------------- time -----------------------------------------------------
 stepWorld :: Float -> World -> World
 stepWorld = const id
 
 
 run :: World -> IO ()
---run world = gameInWindow "marionetta" (300,300) (0,0) white 100 world renderWorld changeWorld stepWorld
-run world = displayInWindow "marionetta" (300,300) (0,0) white $ renderWorld world
+run world = gameInWindow "marionetta" (600,600) (0,0) white 100 world renderWorld changeWorld stepWorld
+
