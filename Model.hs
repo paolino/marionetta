@@ -46,32 +46,28 @@ data Assoluto
 
 data Pezzo a = Pezzo
     {    fulcroPezzo :: Punto
-    ,    origineOAngolo :: Either Punto Angolo
+    ,    originePezzo ::  Punto
+    ,    rotazionePezzo :: Angolo
     } deriving (Show,Read)
 
 
-polare  :: Pezzo a -> (Punto, Angolo)
-polare (Pezzo c (Left o)) = (o, atan2 y x) where
-    Punto (x,y) = o - c
-polare (Pezzo c (Right alpha)) = (c,alpha)
+
 
 
 assolutizza :: Tree (Pezzo Relativo) -> Tree (Pezzo Assoluto)
 assolutizza = recurseTreeAccum (Punto (0,0)) f    where
-    f q (Pezzo c (Left o)) = (qc, Pezzo qc $ Left (o + c)) where qc = q + c
-    f q (Pezzo c alpha) = (qc, Pezzo qc alpha) where qc = q + c
+    f q (Pezzo c o alpha) = (qc, Pezzo qc (o + qc) alpha ) where qc = q + c
+
 
 relativizza :: Tree (Pezzo Assoluto) -> Tree (Pezzo Relativo)
 relativizza = recurseTreeAccum (Punto (0,0)) f    where
-    f q (Pezzo c (Left o)) = (c, Pezzo qc $ Left (o - c)) where qc = c - q
-    f q (Pezzo c alpha) = (c, Pezzo (c - q) alpha)
+    f q (Pezzo c o alpha) = (c, Pezzo (c - q) (o - c) alpha)
 
 -- prepara le ispezioni del pezzo nell'albero più vicino al punto dato
 vicino :: Punto -> Tree (Pezzo Assoluto) -> Ispettore b
 vicino x tr = ispettore ch tr where
-    x' = minimumBy (comparing $ modulus .  subtract x) . toList . fmap (fst . polare) $ tr
-    ch (Pezzo _ (Left o)) = o == x'
-    ch (Pezzo c alpha) = c == x'
+    x' = minimumBy (comparing $ modulus .  subtract x) . toList . fmap originePezzo $ tr
+    ch (Pezzo _ o _) = o == x'
 
 -- ruota il solo pezzo specificato dall'ispettore
 ruotaScelto :: Ispettore (Angolo, Pezzo Relativo) -> Angolo -> Tree (Pezzo Relativo) -> Tree (Pezzo Relativo)
@@ -82,8 +78,7 @@ aggiorna :: Tree (Angolo, Pezzo Relativo) -> Tree (Pezzo Relativo)
 aggiorna = recurseTreeAccum id ruotaPezzo
 
 ruotaPezzo :: Ruota -> (Angolo, Pezzo Relativo) -> (Ruota, Pezzo Relativo)
-ruotaPezzo r (alpha, Pezzo c (Left o)) = let r' = ruota alpha in (r', Pezzo (r c) $ Left (r' o))
-ruotaPezzo r (alpha, Pezzo c (Right beta)) = let r' = ruota alpha in (r', Pezzo (r c) . Right $ beta + alpha)
+ruotaPezzo r (alpha, Pezzo c o beta) = let r' = ruota alpha in (r', Pezzo (r c) (r' o) $ alpha + beta)
 
 newtype Tempo a = Tempo {tempo :: Float} deriving (Eq, Show, Read)
 
@@ -104,7 +99,7 @@ interpolazione      :: Tree (Pezzo Relativo)
                     -> Tempo Normalizzato
                     -> Tree (Pezzo Relativo)
 interpolazione t1 t2 t = aggiorna $ zipTreeWith variazioneAngolo  t1 t2 where
-    variazioneAngolo p p' = ((f p' - f p) /  tempo t, p)  where f = snd . polare
+    variazioneAngolo p p' = ((rotazionePezzo p' - rotazionePezzo p) /  tempo t, p)
 
 
 

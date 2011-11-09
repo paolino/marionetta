@@ -20,7 +20,7 @@ import Data.Tree (Tree)
 import Model
        (Angolo, assolutizza, relativizza, interpolazione, Assoluto,
         Punto(..), Pezzo(..), Pezzo, Relativo, Tempo(..), (.-.), (.+.),
-        (./.), Normalizzato, polare)
+        (./.), Normalizzato)
 import Data.List (mapAccumL)
 import Control.Arrow (Arrow(..))
 import Data.Maybe (catMaybes, fromJust, isJust)
@@ -63,18 +63,18 @@ deserializza s@(Serializzazione f0 ps) =  ss where
     rif = labella [0..] f0
     f f0 (Passo f1 t n c) = Sequenza (r' f0) (r' f1) (r undefined (const id)) t
         where       r = ricentratore n rif :: Ricentratore b
-                    r' = relativizza . r (Pezzo c undefined) gp . assolutizza
+                    r' = relativizza . r (Pezzo c undefined undefined) gp . assolutizza
     gp :: Pezzo Assoluto -> Pezzo Assoluto -> Pezzo Assoluto
-    gp (Pezzo c _) (Pezzo _ o) = Pezzo c o
+    gp (Pezzo c _ _) (Pezzo _ o alpha) = Pezzo c o alpha
 
 
-type Renderer b = ((Punto, Angolo), Punto) -> b
+type Renderer b = Pezzo Assoluto -> b
 
 type Rendering b = Tree (Renderer b)
 
 renderFigura :: Rendering b -> Figura -> [b]
-renderFigura r x = trace (show x) . toList . zipTreeWith f r . assolutizza $ x where
-    f g p@(Pezzo c o) = g $ (polare $ p,c)
+renderFigura r x = trace (show x) . toList . zipTreeWith ($) r . assolutizza $ x
+
 
 
 renderSequenza :: Rendering b -> Sequenza (Renderer b) -> Tempo Assoluto -> Tempo Assoluto -> [b]
