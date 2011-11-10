@@ -18,7 +18,20 @@ build-depends: base -any, base -any, base -any, base -any,
                gloss -any, gloss -any, gloss -any, gloss -any, gloss -any,
                gloss -any, mtl -any, mtl -any, mtl -any, mtl -any, mtl -any,
                mtl -any, mtl -any, mtl -any, mtl -any, mtl -any, mtl -any,
-               mtl -any, mtl -any, mtl -any, mtl -any, mtl -any
+               mtl -any, mtl -any, mtl -any, mtl -any, mtl -any, mtl -any,
+               mtl -any, mtl -any, mtl -any, mtl -any, mtl -any, mtl -any,
+               mtl -any, mtl -any, mtl -any, mtl -any, mtl -any, mtl -any,
+               mtl -any, mtl -any, mtl -any, gloss -any, gloss -any, gloss -any,
+               gloss -any, gloss -any, gloss -any, gloss -any, gloss -any,
+               gloss -any, gloss -any, gloss -any, gloss -any, gloss -any,
+               gloss -any, gloss -any, gloss -any, containers -any,
+               containers -any, containers -any, containers -any, containers -any,
+               containers -any, containers -any, containers -any, containers -any,
+               containers -any, containers -any, containers -any, containers -any,
+               containers -any, containers -any, containers -any, base -any,
+               base -any, base -any, base -any, base -any, base -any, base -any,
+               base -any, base -any, base -any, base -any, base -any, base -any,
+               base -any, base -any, base -any
 stability:
 homepage: https://github.com/paolino/marionetta
 package-url:
@@ -54,7 +67,7 @@ includes:
 install-includes:
 include-dirs:
 hs-source-dirs: .
-other-modules:
+other-modules: Interface.Register
 ghc-prof-options:
 ghc-shared-options:
 ghc-options:
@@ -83,7 +96,7 @@ includes:
 install-includes:
 include-dirs:
 hs-source-dirs: .
-other-modules:
+other-modules: Interface.Register
 ghc-prof-options:
 ghc-shared-options:
 ghc-options:

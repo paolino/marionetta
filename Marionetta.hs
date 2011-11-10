@@ -55,8 +55,8 @@ figura :: Figura
 figura = relativizza $ fmap fst marionetta
 
 world :: World
-world = World  (mkZipper $ IFigura figura (vicino (Punto (0,0)) (assolutizza figura)) id) rendering
+world = mkZipper $ IFigura figura (vicino (Punto (0,0)) (assolutizza figura)) id
 
-main = run world
+main = run rendering world
 
 
