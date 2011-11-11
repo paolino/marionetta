@@ -102,6 +102,7 @@ interpolazione      :: Tree (Pezzo Relativo)
                     -> Tree (Pezzo Relativo)
 interpolazione t1 t2 t = aggiorna $ zipWith variazioneAngolo  t1 t2 where
     variazioneAngolo p p' = ((rotazionePezzo p' - rotazionePezzo p) /  tempo t, p)
+
 type Figura = Tree (Pezzo Relativo)
 type Renderer b = Pezzo Assoluto -> b
 

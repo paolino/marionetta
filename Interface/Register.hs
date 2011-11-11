@@ -31,15 +31,16 @@ data Movimenti a = Movimenti
     ,   movimenti :: Map Char (Movimento a)
     }
 
-mkMovimenti = Movimenti (Punto (0,0)) empty
+mkMovimenti = Movimenti Nothing empty
 
 type Movimento a = Punto -> a -> Punto -> a
 
 type CatchEvent a = Event -> a -> Maybe a
 
 catchMevs :: CatchEvent (a, Movimenti a)
-catchMevs (EventMotion (Punto -> p)) (x,Movimenti q movs) = trace "k" $
-    Just (foldr (\f x -> f q x p) x . toList $ movs, Movimenti p movs)
+catchMevs (EventKey (MouseButton _) _ _ _) (x,Movimenti _ movs) =  Just  (x,Movimenti Nothing movs)
+catchMevs (EventMotion (Punto -> p)) (x,Movimenti q movs) =
+    Just (foldr (\f x -> f (maybe p id q) x p) x . toList $ movs, Movimenti (Just p)  movs)
 catchMevs _ _  = Nothing
 
 register :: Key -> Movimento a -> CatchEvent (Movimenti a)
@@ -47,7 +48,7 @@ register c@(Char z)  m (EventKey e Down _  _) (Movimenti p movs)
     | c == e = Just . Movimenti p $ insert z m movs
     | otherwise = Nothing
 register c@(Char z) m (EventKey e Up _  _) (Movimenti p movs)
-    | c == e = Just . Movimenti p $ delete z movs
+    | c == e = Just . Movimenti Nothing $ delete z movs
     | otherwise = Nothing
 
 catchRegister :: [CatchEvent (Movimenti a)] -> CatchEvent (a, Movimenti a)
