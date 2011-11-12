@@ -6,8 +6,8 @@
 module Interfaccia where
 
 
-import Linguaggio
-       ( Passo(..), deserializza, Sequenza(..) , Serializzazione(..))
+-- import Linguaggio
+  --     ( Passo(..), deserializza, Sequenza(..) , Serializzazione(..))
 import Graphics.Gloss
        (greyN, color, green, line, displayInWindow, Picture, white,
         gameInWindow)
@@ -29,14 +29,28 @@ import Interface.Register (register, catchRegister, CatchEvent, Movimenti, mkMov
 import Control.Arrow (ArrowChoice(..))
 
 
-data IFigura = IFigura
-    {   ifigura :: Figura
-    ,   irotazione :: forall b . Selector Tree b
-    ,   ipov :: Figura -> Figura
-    }
+data IFigura
+    = IBase
+        {   ifigura :: Figura
+        ,   irotazione :: forall b . Selector Tree b
+        }
+    | IRicentrata
+        {   iricentratore :: forall b c . Ricentratore b c
+        ,   iprecedente :: IFigura
+        }
 
 
 
+{-
+ricentra :: Punto -> IFigura -> IFigura
+ricentra l (IFigura ifig ir ipov) = IFifura ifig ir ipov' where
+    ipov' = let
+        r = ricentratore 1 rif'
+        rif = labella (repeat 0) ifig
+        rif' = fst (ir rif) $ first (const 1)
+        gp :: Pezzo Assoluto -> Pezzo Assoluto -> Pezzo Assoluto
+        gp (Pezzo c _ _) (Pezzo _ o alpha) = Pezzo c o alpha
+        in relativizza . r (Pezzo l undefined undefined) gp . assolutizza
 
 -----------------------------   rendering ---------------------------------------------
 renderIFigura re (IFigura ifig ir ipov) = Pictures . renderFigura re' $ ifig
@@ -103,3 +117,4 @@ run re world = gameInWindow "marionetta" (600,600) (0,0) white 100 (world,mkMovi
 
 
 
+-}

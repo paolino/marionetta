@@ -6,7 +6,7 @@ import Data.Tree.Missing (ricentratore, labella)
 import Model (Figura, Rendering, Renderer,renderFigura, Punto (..), Pezzo (..), assolutizza, relativizza, Assoluto, vicino )
 import Interfaccia
 import Control.Arrow
-import Linguaggio (Serializzazione(..) , Passo (..))
+-- import Linguaggio (Serializzazione(..) , Passo (..))
 import Data.List.Zipper
 
 

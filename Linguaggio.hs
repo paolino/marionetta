@@ -64,7 +64,7 @@ deserializza s@(Serializzazione f0 ps) =  ss where
     ss = zipWith f (f0 : map nuovaFigura ps) ps where
     rif = labella [0..] f0
     f f0 (Passo f1 t n c) = Sequenza (r' f0) (r' f1) (r undefined (const id)) t
-        where       r = ricentratore n rif :: Ricentratore b
+        where       r = ricentratore n rif :: Ricentratore b c
                     r' = relativizza . r (Pezzo c undefined undefined) gp . assolutizza
     gp :: Pezzo Assoluto -> Pezzo Assoluto -> Pezzo Assoluto
     gp (Pezzo c _ _) (Pezzo _ o alpha) = Pezzo c o alpha
