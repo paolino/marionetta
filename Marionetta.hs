@@ -2,7 +2,7 @@
 import Debug.Trace
 import Graphics.Gloss
 import Data.Tree (Tree (Node))
-import Data.Tree.Missing (ricentratore, labella)
+
 import Model (Figura, Rendering, Renderer,renderFigura, Punto (..), Pezzo (..), assolutizza, relativizza, Assoluto, vicino )
 import Interfaccia
 import Control.Arrow
@@ -55,7 +55,7 @@ figura :: Figura
 figura = relativizza $ fmap fst marionetta
 
 world :: World
-world = mkZipper $ IFigura figura (vicino (Punto (0,0)) (assolutizza figura)) id
+world = mkZipper $ IFigura figura [] id id
 
 main = run rendering world
 

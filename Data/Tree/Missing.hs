@@ -1,5 +1,5 @@
 
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, NoMonomorphismRestriction #-}
 
 -- | Some useful functions to work with Data.Tree.Tree
 module Data.Tree.Missing  where
@@ -18,8 +18,9 @@ import Data.Zip
 ------------------------------------------------------------
 
 
+
 instance Zip Tree where
-    zipWith f (Node x xs) (Node y ys) = Node (f x y) $ zipWith (zipWith f) xs ys
+    zipWith f (Node x xs) (Node y ys) =  Node (f x y) $ zipWith (zipWith f) xs ys
 
 recurseTreeAccum :: b -> (b -> a -> (b,c)) -> Tree a -> Tree c
 recurseTreeAccum x f n = recurse' x n where
@@ -31,31 +32,38 @@ recurseTreeAccum x f n = recurse' x n where
 inspectTop (Node x _) = x
 modifyTop f (Node x xs) = Node (f x) xs
 
-labella :: [a] -> Tree b -> Tree a
-labella xs = snd . mapAccumL (\(x:xs) _ -> (xs,x)) xs
-
 
 dropAt n xs = let (as,_:bs) = splitAt n xs in as ++ bs
 insertAt (n,x) xs = let (as,bs) = splitAt n xs in as ++ x : bs
 
-type Ricentratore b =  b -> (b -> b -> b) -> Tree b -> Tree b
+type Ricentratore b =  Tree b -> Tree b
 
-forward :: Eq a => a -> Tree a -> Ricentratore b
-forward y tr x0 k =  fmap snd . maybe (error "missing element in ricentratore") id . move (const id) . zipWith (,) tr
+forward :: (Show a , Eq a) => a -> Tree a -> Ricentratore b
+forward y tr tr' =   fmap snd . maybe (error $ "missing element in ricentratore, forw: " ++ drawTree (fmap show tr)) id . move id . zipWith (,) tr $ tr'
         where
             move c n@(Node (x,x2) ys)
-                | x == y = Just . Node (x, k x0 x2) $ c x2 ys
+                | x == y = Just . Node (x,x2) $ c ys
                 | null ys = Nothing
                 | otherwise = msum $ zipWith move (map mkc [0..]) ys
-                    where  mkc n x' = (:) (Node (x, k x' x2) . c x2 $ dropAt n ys)
+                    where  mkc n = (:) (Node (x, x2) . c $ dropAt n ys)
 
-backward :: Eq a => a -> Tree a -> Ricentratore b
-backward y tr =    maybe (error "missing element in ricentratore") id . move (\(Node x ys) _ _ y -> Node x (y:ys)) $ tr
+search :: (Eq a) => a -> Tree a -> Maybe a
+search y (Node x ys) | x == y = Just x
+                     | null ys = Nothing
+                     | otherwise = msum $ map (search y) ys
+
+backward :: ( Eq a) => a -> Tree a -> Ricentratore b
+backward y tr =    maybe (error "missing element in ricentratore") id . move Nothing $ tr
         where
-            reverting my h x0 k (Node x ys) = let y:ys' = maybe id insertAt my ys
-               in h (Node (k x0 x) ys') x k y
+            reverting Nothing mh (Node x (y:ys)) = maybe (Node x (y:ys)) (\h -> h y $ Node x ys) mh
+            reverting (Just (n, Node x (y:ys))) (Just h) y' = let ys' = insertAt (n,y') ys in h y (Node x ys')
+            reverting (Just (n, Node x ys)) Nothing y = Node x $ insertAt (n,y) ys
             move h n@(Node x ys)
                 | x == y = Just $ reverting Nothing h
                 | null ys = Nothing
-                | otherwise = msum $ zipWith move [\ y -> reverting (Just (n,y)) h | n <- [0..]] ys
+                | otherwise = msum $ zipWith move [Just $ \ y -> reverting (Just (n,y)) h | n <- [0..]] ys
+
+niceTree = putStrLn . drawTree . fmap show
+
+checkFB n s = mapM_ niceTree [s, forward n s s, backward n s (forward n s s)]
 

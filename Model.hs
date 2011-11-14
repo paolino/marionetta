@@ -50,7 +50,7 @@ data Pezzo a = Pezzo
     {    fulcroPezzo :: Punto
     ,    originePezzo ::  Punto
     ,    rotazionePezzo :: Angolo
-    } deriving (Show,Read)
+    } deriving (Show,Read,Eq)
 
 
 
