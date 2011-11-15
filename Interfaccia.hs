@@ -13,8 +13,8 @@ import Graphics.Gloss
        (greyN, color, green, line, displayInWindow, Picture, white,
         gameInWindow)
 import Model
-       (relativizza, assolutizza, vicino, Angolo, ruotaScelto, Punto(..),
-        Relativo, Pezzo(..), Figura, renderFigura, Rendering)
+       (Assoluto, relativizza, assolutizza, vicino, Angolo, ruotaScelto,
+        Punto(..), Relativo, Pezzo(..), Figura, renderFigura, Rendering)
 
 import Graphics.Gloss.Data.Picture (Picture(..))
 import Debug.Trace
@@ -26,7 +26,7 @@ import Data.List.Zipper
 import Graphics.Gloss.Interface.Game
 import Data.Graph (reachable)
 import Data.Tree.Missing
-       (backward, forward, Ricentratore, modifyTop)
+       (Routing, backward, forward, Ricentratore, modifyTop)
 import Interface.Register (register, catchRegister, CatchEvent, Movimenti, mkMovimenti)
 import Control.Arrow (ArrowChoice(..))
 import Control.Exception (assert)
@@ -35,40 +35,64 @@ import Control.Exception (assert)
 data IFigura = IFigura
         {   ifigura :: Figura
         ,   iselectors :: forall b. [Selector Tree b]
-        ,   iforward :: forall b . Ricentratore b
-        ,   ibackward :: forall b . Ricentratore b
+        ,   iforward :: forall b . Routing b
+        ,   ibackward :: forall b . Routing b
+
         }
 
+routingPezzi :: Punto -> Routing (Pezzo Assoluto) -> Tree (Pezzo Assoluto) -> Tree (Pezzo Assoluto)
+routingPezzi p r = snd . r (Pezzo p undefined undefined) (\(Pezzo c _ _) (Pezzo _ o alpha) -> Pezzo c o alpha)
+
+routingDumb :: Routing b -> Tree b -> Tree b
+routingDumb r = snd . r undefined (const id)
+
+rotazioneInOrigine = modifyTop $ \(Pezzo _ o alpha) ->  Pezzo o o alpha
+
 ricentra :: Punto -> IFigura -> IFigura
-ricentra l (IFigura ifig isels _ ibackw) = let
-            ifig' = ibackw $ assolutizza ifig
-            isels' = map (moveSelector ifig ibackw) isels
+ricentra l (IFigura ifig isels _ ibackw ) = let
+
+            ifig' = rotazioneInOrigine . routingPezzi undefined ibackw $ assolutizza ifig
+
+            isels' = map (moveSelector ifig $ routingDumb ibackw) isels
             ir = vicino l ifig'
             lifig = labella [0..] $ ifig'
             c = head $ snd (ir lifig)
             iforw =  forward c lifig
             ibackw' =  backward c lifig
-            ifig'' = relativizza . iforw $ ifig'
-            isels'' = map (moveSelector ifig' iforw) isels'
-            in trace (drawTree $ fmap show . labella [0..] $  ifig'') $ IFigura ifig'' isels'' iforw ibackw'
+            ifig'' = relativizza . rotazioneInOrigine . routingPezzi undefined iforw $ ifig'
+            isels'' = map (moveSelector ifig' $ routingDumb iforw) isels'
+            in  IFigura ifig'' isels'' iforw ibackw'
 
 
 -----------------------------   rendering ---------------------------------------------
-renderIFigura re (IFigura ifig isels iforw _) = Pictures . renderFigura re'' $ ifig
+renderIFigura re (IFigura ifig isels iforw _ ) = Pictures .  renderFigura re'' $ ifig
     where
-    re' = foldr (\ir re -> fst (ir re) $ (Color yellow .)) (iforw re) isels
+    re' = foldr (\ir re -> fst (ir re) $ (Color yellow .)) (routingDumb iforw re) isels
     re'' = modifyTop (Color blue .) re'
 
 
 croce = Color green $ Pictures [line [(-200,0),(200,0)], line [(0,200),(0,-200)]]
+
 renderWorld :: Rendering Picture -> Zipper IFigura -> Picture
+
 renderWorld re ca  = let
     ps =  Pictures . map (renderIFigura re) $ elementi  ca
     actual = (renderIFigura re) $ valore ca
-    in Pictures [croce,color (greyN 0.5) ps, color (greyN 0.1) actual]
+    in Pictures $[Color blue . translate (-250) (250-12*i) . scale 0.12 0.09 $ Text h | (i,h) <- zip [0..] help] ++
+        [ croce,color (greyN 0.5) ps, color (greyN 0.1) actual]
 
 renderWorldG re = renderWorld re . fst
 
+help =  [   "S :select/deselect nearest to pointer piece for rotation"
+        ,   "Z :deselect all pieces"
+        ,   "R :rotate selected pieces while dragging the mouse"
+        ,   "X :move top piece rotation center to pointer"
+        ,   "G :change top piece as the nearest to pointer"
+        ,   "T :translate marionetta while dragging the mouse"
+        ,   "C :clone marionetta"
+        ,   "Mouse wheel : select a marionetta to edit"
+        ,   "D :eliminate marionetta"
+        ]
 -----------------------------  input ---------------------------------------------------
 
 registraT :: CatchEvent (Movimenti (Zipper IFigura))
@@ -81,7 +105,7 @@ registraT = register (Char 't') $ \ l z l' -> let
         in modifica f z
 registraR :: CatchEvent (Movimenti (Zipper IFigura))
 registraR = register (Char 'r') $ \ l z l' -> let
-        f (IFigura ifig ir iforw ibackw) = let
+        f (IFigura ifig ir iforw ibackw ) = let
             ifig' = foldr (\(ir,alpha) -> ruotaScelto ir alpha) ifig (zip ir $ map iralpha ir)
             iralpha ir = let
                 Pezzo q _ _ = head . snd $ ir (assolutizza ifig)
@@ -102,8 +126,10 @@ changeWorld (EventKey (Char 's') Down _ (Punto -> l')) (z, mov)  = Just (modific
     f (IFigura ifig ir iforw ibackw) = let
             ir' = vicino l' (assolutizza ifig)
             in IFigura ifig (filterDuplicates ifig (ir':ir)) iforw ibackw
-changeWorld (EventKey (Char 'g') Down _ (Punto -> l)) (z, mov)  = Just (modifica (ricentra l) z, mov) where
-
+changeWorld (EventKey (Char 'g') Down _ (Punto -> l)) (z, mov)  = Just (modifica (ricentra l) z, mov)
+changeWorld (EventKey (Char 'z') Down _ _) (z, mov)  = Just (modifica (\(IFigura ifig _ iforw ibackw) -> IFigura ifig [] iforw ibackw) z, mov)
+changeWorld (EventKey (Char 'x') Down _ (Punto -> l)) (z, mov)  = Just (modifica f  z, mov) where
+    f (IFigura ifig ir iforw ibackw) = IFigura (relativizza . modifyTop (\(Pezzo _ o alpha) -> Pezzo l o alpha) . assolutizza $ ifig) ir iforw ibackw
 changeWorld e z = catchRegister [registraT, registraR] e z
 
 

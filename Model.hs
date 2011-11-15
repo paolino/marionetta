@@ -39,6 +39,7 @@ type Ruota = Punto -> Punto
 ruota :: Angolo -> Ruota
 ruota alpha (Punto (x,y))= Punto (cos alpha * x - sin alpha * y, sin alpha * x + cos alpha * y)
 
+
 -- modulo di un vettore
 modulus :: Punto -> Float
 modulus (Punto (x,y)) = sqrt (x ^ 2 + y ^ 2)

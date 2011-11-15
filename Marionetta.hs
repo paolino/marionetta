@@ -5,6 +5,7 @@ import Data.Tree (Tree (Node))
 
 import Model (Figura, Rendering, Renderer,renderFigura, Punto (..), Pezzo (..), assolutizza, relativizza, Assoluto, vicino )
 import Interfaccia
+import Data.Tree.Missing
 import Control.Arrow
 -- import Linguaggio (Serializzazione(..) , Passo (..))
 import Data.List.Zipper
@@ -55,7 +56,7 @@ figura :: Figura
 figura = relativizza $ fmap fst marionetta
 
 world :: World
-world = mkZipper $ IFigura figura [] id id
+world = mkZipper $ IFigura figura [] (forward (inspectTop figura) figura) (backward (inspectTop figura) figura)
 
 main = run rendering world
 
