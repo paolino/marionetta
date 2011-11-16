@@ -10,13 +10,13 @@ Name:                marionetta
 Version:             0.1
 
 -- A short (one-line) description of the package.
-Synopsis:            2d marionetta movements
+-- Synopsis:            
 
 -- A longer description of the package.
 -- Description:         
 
 -- URL for the project homepage or repository.
-Homepage:            https://github.com/paolino/marionetta
+Homepage:            
 
 -- The license under which the package is released.
 License:             BSD3
@@ -25,7 +25,7 @@ License:             BSD3
 License-file:        LICENSE
 
 -- The package author(s).
-Author:              Paolo Veronelli
+Author:              paolo veronelli
 
 -- An email address to which users can send suggestions, bug reports,
 -- and patches.
@@ -48,14 +48,13 @@ Cabal-version:       >=1.2
 
 Executable marionetta
   -- .hs or .lhs file containing the Main module.
-  Main-is: Marionetta.hs            
+  Main-is: Marionetta.hs             
   
   -- Packages needed in order to build this package.
-  Build-depends: base -any, mtl -any, containers -any, gloss -any
+  -- Build-depends:       
   
   -- Modules not exported by this package.
-  Other-modules: Data.List.Zipper Data.Tree.Missing Data.Zip
-                 Interfaccia Model
+  Other-modules:  Control.hs
   
   -- Extra tools (e.g. alex, hsc2hs, ...) needed to build the source.
   -- Build-tools:         

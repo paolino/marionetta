@@ -63,23 +63,7 @@ backward y tr x0 f =    maybe (error "missing element in ricentratore") id . mov
 
 type Routing b =  b -> (b -> b -> b) -> Tree b -> (b , Tree b)
 
-routing :: forall a b . Eq a => a -> Tree a -> Routing b
-routing xt tr x0 f = second (fmap snd) . either (error "endpoint not found in routing") id . search . zipWith (,) tr  where
-    search (Node (x,x2) ys)
-        | xt == x = Right(x2,Node (x,f x0 x2) ys)
-        | null ys = Left (Node (x,x2) ys)
-        | otherwise = let
-            ys' = map search ys
-            in case rights ys' of
-                [] -> Left (Node (x,x2) ys)
-                [(x0,_)] -> Right (x2,Node (x,f x0 x2) $ map (either id snd) ys')
-                _ -> error "multiple endpoints in routing"
+routingDumb :: Routing b -> Tree b -> Tree b
+routingDumb r = snd . r undefined (const id)
 
-
-
-
-niceTree = putStrLn . drawTree . fmap show
-{-
-checkFB n s = mapM_ niceTree [s, forward n s s, backward n s (forward n s s)]
--}
 
