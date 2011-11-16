@@ -23,6 +23,7 @@ import Data.Tree (drawTree, Tree)
 import Data.List.Zipper
        (elimina, destra, sinistra, modifica, inserisci, valore, elementi,
         Zipper(..))
+import qualified Data.Char
 import Graphics.Gloss.Interface.Game
 import Data.Graph (reachable)
 import Data.Tree.Missing
@@ -78,34 +79,38 @@ renderWorld :: Rendering Picture -> Zipper IFigura -> Picture
 renderWorld re ca  = let
     ps =  Pictures . map (renderIFigura re) $ elementi  ca
     actual = (renderIFigura re) $ valore ca
-    in Pictures $[Color blue . translate (-250) (250-12*i) . scale 0.12 0.09 $ Text h | (i,h) <- zip [0..] help] ++
+    in Pictures $[Color blue . translate (-250) (250-16*i) . scale 0.09 0.14 $ Text h | (i,h) <- zip [0..] help] ++
         [ croce,color (greyN 0.5) ps, color (greyN 0.1) actual]
 
 renderWorldG re = renderWorld re . fst
 
-help =  [   "S :select/deselect nearest to pointer piece for rotation"
-        ,   "Z :deselect all pieces"
-        ,   "R :rotate selected pieces while dragging the mouse"
-        ,   "X :move top piece rotation center to pointer"
-        ,   "G :change top piece as the nearest to pointer"
-        ,   "T :translate marionetta while dragging the mouse"
-        ,   "C :clone marionetta"
-        ,   "Mouse wheel : select a marionetta to edit"
-        ,   "D :eliminate marionetta"
+help =  [   "S: select/deselect nearest to pointer piece for rotation"
+        ,   "Z: deselect all pieces"
+        ,   "R: rotate selected pieces while moving the mouse"
+        ,   "X: move top piece rotation while moving the mouse"
+        ,   "G: change top piece as the nearest to pointer"
+        ,   "T: translate marionetta while moving the mouse"
+        ,   "C: clone marionetta"
+        ,   "Mouse wheel: select a marionetta to edit"
+        ,   "D: eliminate marionetta"
         ]
 -----------------------------  input ---------------------------------------------------
 
-registraT :: CatchEvent (Movimenti (Zipper IFigura))
+type CatchWorld = CatchEvent (Zipper IFigura, Movimenti (Zipper IFigura))
 
-registraT = register (Char 't') $ \ l z l' -> let
-        f (IFigura ifig ir iforw ibackw) = let
+registerModActual :: Data.Char.Char
+    -> (Punto -> Punto -> IFigura -> IFigura)
+    -> CatchWorld
+registerModActual s f = register (Char s) $ \ l z l' -> modifica (f l l') z
+
+registraT :: CatchWorld
+registraT = registerModActual 't' $ \ l l' (IFigura ifig ir iforw ibackw) -> let
             ifig' = modifyTop g ifig
             g (Pezzo p o alpha) = Pezzo (p + l' - l) o alpha
             in IFigura ifig' ir iforw ibackw
-        in modifica f z
-registraR :: CatchEvent (Movimenti (Zipper IFigura))
-registraR = register (Char 'r') $ \ l z l' -> let
-        f (IFigura ifig ir iforw ibackw ) = let
+
+registraR :: CatchWorld
+registraR = registerModActual 'r' $ \ l l' (IFigura ifig ir iforw ibackw ) -> let
             ifig' = foldr (\(ir,alpha) -> ruotaScelto ir alpha) ifig (zip ir $ map iralpha ir)
             iralpha ir = let
                 Pezzo q _ _ = head . snd $ ir (assolutizza ifig)
@@ -114,7 +119,14 @@ registraR = register (Char 'r') $ \ l z l' -> let
                 Punto (x',y') = l' - q
                 in alpha
             in IFigura ifig' ir iforw ibackw
-        in modifica f z
+registraX :: CatchWorld
+
+registraX = registerModActual 'x' $ \ l l' (IFigura ifig ir iforw ibackw)
+        -> IFigura (relativizza . modifyTop (\(Pezzo _ o alpha) -> Pezzo l o alpha)
+             . assolutizza $ ifig) ir iforw ibackw
+
+
+
 
 changeWorld :: CatchEvent (Zipper IFigura, Movimenti (Zipper IFigura))
 
@@ -122,15 +134,18 @@ changeWorld (EventKey (Char 'c') Down _ _ ) (z, mov)  = Just (inserisci id z, mo
 changeWorld (EventKey (Char 'd') Down _ _ ) (z, mov)  = Just (maybe z id $ elimina z, mov)
 changeWorld (EventKey (MouseButton WheelUp) Up _ _ ) (z, mov)  = Just (destra z, mov)
 changeWorld (EventKey (MouseButton WheelDown) Up _ _ ) (z, mov)  = Just (sinistra z, mov)
-changeWorld (EventKey (Char 's') Down _ (Punto -> l')) (z, mov)  = Just (modifica f z, mov) where
+
+changeWorld (EventKey (Char 'g') Down _ (Punto -> l)) (z, mov)  = Just (modifica (ricentra l) z, mov)
+changeWorld (EventKey (Char 'z') Down _ _) (z, mov)  = Just (modifica (\(IFigura ifig _ iforw ibackw) ->
+                        IFigura ifig [] iforw ibackw) z, mov)
+
+
+changeWorld (EventKey (Char 's') Down _ (Punto -> l')) (z,mov) = Just (modifica f z, mov) where
     f (IFigura ifig ir iforw ibackw) = let
             ir' = vicino l' (assolutizza ifig)
             in IFigura ifig (filterDuplicates ifig (ir':ir)) iforw ibackw
-changeWorld (EventKey (Char 'g') Down _ (Punto -> l)) (z, mov)  = Just (modifica (ricentra l) z, mov)
-changeWorld (EventKey (Char 'z') Down _ _) (z, mov)  = Just (modifica (\(IFigura ifig _ iforw ibackw) -> IFigura ifig [] iforw ibackw) z, mov)
-changeWorld (EventKey (Char 'x') Down _ (Punto -> l)) (z, mov)  = Just (modifica f  z, mov) where
-    f (IFigura ifig ir iforw ibackw) = IFigura (relativizza . modifyTop (\(Pezzo _ o alpha) -> Pezzo l o alpha) . assolutizza $ ifig) ir iforw ibackw
-changeWorld e z = catchRegister [registraT, registraR] e z
+
+changeWorld e z = catchRegister [registraT, registraR, registraX] e z
 
 
 changeWorldG e w = maybe w id $ changeWorld e w

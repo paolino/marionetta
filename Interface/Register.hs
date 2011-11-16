@@ -41,17 +41,18 @@ catchMevs :: CatchEvent (a, Movimenti a)
 catchMevs (EventKey (MouseButton _) _ _ _) (x,Movimenti _ movs) =  Just  (x,Movimenti Nothing movs)
 catchMevs (EventMotion (Punto -> p)) (x,Movimenti q movs) =
     Just (foldr (\f x -> f (maybe p id q) x p) x . toList $ movs, Movimenti (Just p)  movs)
+
 catchMevs _ _  = Nothing
 
-register :: Key -> Movimento a -> CatchEvent (Movimenti a)
-register c@(Char z)  m (EventKey e Down _  _) (Movimenti p movs)
-    | c == e = Just . Movimenti p $ insert z m movs
+register :: Key -> Movimento a -> CatchEvent (a,Movimenti a)
+register c@(Char z)  m (EventKey e Down _ (Punto -> p)) (x,Movimenti q movs)
+    | c == e = Just  (m (maybe p id q) x p,  Movimenti (Just p) $ insert z m movs)
     | otherwise = Nothing
-register c@(Char z) m (EventKey e Up _  _) (Movimenti p movs)
-    | c == e = Just . Movimenti Nothing $ delete z movs
+register c@(Char z) m (EventKey e Up _  _) (x,Movimenti p movs)
+    | c == e = Just  (x,Movimenti Nothing $ delete z movs)
     | otherwise = Nothing
 
-catchRegister :: [CatchEvent (Movimenti a)] -> CatchEvent (a, Movimenti a)
+catchRegister :: [CatchEvent (a,Movimenti a)] -> CatchEvent (a, Movimenti a)
 catchRegister regs ev (w,movs) = catchMevs' <|> catchRegs where
         catchMevs' = catchMevs ev (w,movs)
-        catchRegs = (,) w `fmap` msum (map (\r -> r ev movs) regs)
+        catchRegs = msum . map (\r -> r ev (w,movs)) $ regs
