@@ -7,7 +7,7 @@ module Model where -- (Punto (..), Semiretta (..), Angolo , TreePath, Tree, Acce
 
 import Prelude hiding (zipWith)
 import Data.Tree (Tree(..))
-import Data.Tree.Missing ( recurseTreeAccum)
+import Data.Tree.Missing ( recurseTreeAccum, Routing, modifyTop)
 import Control.Applicative ((<$>))
 import Control.Monad (ap)
 import Data.Foldable (minimumBy, toList)
@@ -105,14 +105,13 @@ interpolazione t1 t2 t = aggiorna $ zipWith variazioneAngolo  t1 t2 where
     variazioneAngolo p p' = ((rotazionePezzo p' - rotazionePezzo p) /  tempo t, p)
 
 type Figura = Tree (Pezzo Relativo)
-type Renderer b = Pezzo Assoluto -> b
-
-type Rendering b = Tree (Renderer b)
-
-renderFigura :: Rendering b -> Figura -> [b]
-renderFigura r x =  toList . zipWith ($) r . assolutizza $ x
 
 
+routingPezzi :: Punto -> Routing (Pezzo Assoluto) -> Tree (Pezzo Assoluto) -> Tree (Pezzo Assoluto)
+routingPezzi p r = snd . r (Pezzo p undefined undefined) (\(Pezzo c _ _) (Pezzo _ o alpha) -> Pezzo c o alpha)
+
+rotazioneInOrigine :: Tree (Pezzo Assoluto) -> Tree (Pezzo Assoluto)
+rotazioneInOrigine = modifyTop $ \(Pezzo _ o alpha) ->  Pezzo o o alpha
 
 
 

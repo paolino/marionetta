@@ -48,13 +48,13 @@ Cabal-version:       >=1.2
 
 Executable marionetta
   -- .hs or .lhs file containing the Main module.
-  Main-is: Marionetta.hs             
+  Main-is: marionetta.hs             
   
   -- Packages needed in order to build this package.
-  -- Build-depends:       
+  Build-depends: base -any, mtl -any, containers -any , gloss -any
   
   -- Modules not exported by this package.
-  Other-modules:  Control.hs
+  Other-modules:  Controller Data.List.Zipper Data.Tree.Missing Data.Zip Gloss IFigura Model View
   
   -- Extra tools (e.g. alex, hsc2hs, ...) needed to build the source.
   -- Build-tools:         
