@@ -7,16 +7,16 @@ Name:                marionetta
 -- The package version. See the Haskell package versioning policy
 -- (http://www.haskell.org/haskellwiki/Package_versioning_policy) for
 -- standards guiding when and how versions should be incremented.
-Version:             0.1
+Version:             0.1.0.3
 
 -- A short (one-line) description of the package.
--- Synopsis:            
+Synopsis: A study of marionetta movements.
 
 -- A longer description of the package.
--- Description:         
+Description: An opengl application to make animations with marionetta-like structures. Actually only marionetta placement is implemented. Mouse movements are now intended with at least a button pressed. Future versions of gloss may resolve the issue. A patch is distributed to change this issue in gloss package.
 
 -- URL for the project homepage or repository.
-Homepage:            
+Homepage: https://github.com/paolino/marionetta                    
 
 -- The license under which the package is released.
 License:             BSD3
@@ -25,7 +25,7 @@ License:             BSD3
 License-file:        LICENSE
 
 -- The package author(s).
-Author:              paolo veronelli
+Author:              Paolo Veronelli
 
 -- An email address to which users can send suggestions, bug reports,
 -- and patches.
@@ -40,7 +40,7 @@ Build-type:          Simple
 
 -- Extra files to be distributed with the package, such as examples or
 -- a README.
--- Extra-source-files:  
+Extra-source-files:  gloss.patch
 
 -- Constraint on the version of Cabal needed to build this package.
 Cabal-version:       >=1.2
@@ -51,11 +51,11 @@ Executable marionetta
   Main-is: marionetta.hs             
   
   -- Packages needed in order to build this package.
-  Build-depends: base -any, mtl -any, containers -any , gloss -any
+  Build-depends: base >=4 && <5, mtl -any, containers -any , gloss -any, splines -any, vector-space -any, vector >= 0.3
   
   -- Modules not exported by this package.
-  Other-modules:  Controller Data.List.Zipper Data.Tree.Missing Data.Zip Gloss IFigura Model View
+  Other-modules:  Controller Data.List.Zipper Data.Tree.Missing Data.Zip Gloss IFigura Model View Run Math Movie
   
   -- Extra tools (e.g. alex, hsc2hs, ...) needed to build the source.
   -- Build-tools:         
-  
+

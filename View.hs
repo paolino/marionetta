@@ -1,17 +1,19 @@
-module View where
+{-# LANGUAGE ViewPatterns #-}
+module View (RenderHelp, Render, Colore, renderWorld) where
 
 import Prelude hiding (zipWith)
 import Data.Tree (Tree) 
 import Data.Foldable (toList)
-import Data.Monoid (mconcat,Monoid)
+import Data.Monoid (mconcat,Monoid,mempty)
 
 
 import Data.Zip (zipWith)
-import Data.Tree.Missing (modifyTop, routingDumb, Routing)
-import Data.List.Zipper (Zipper, elementi, valore)
-import Model (assolutizza , Pezzo (..), Punto (..), Assoluto, Figura)
-import IFigura (IFigura(..))
-
+import Data.Tree.Missing (modifyTop, routingDumb)
+import Data.List.Zipper (Zipper, elementi, valore, destra, sinistra, isLast)
+import Model (assolutizza , Pezzo , Assoluto, Figura, Tempo, Normalizzato, routingPezzi, rotazioneInOrigine)
+import IFigura (IFigura(IFigura))
+import Controller (World (..))
+import Movie
 
 type Render b = Pezzo Assoluto -> b
 
@@ -20,6 +22,7 @@ renderFigura r x =  mconcat . toList . zipWith ($) r . assolutizza $ x
 
 type Colore b = (Float,Float,Float) -> b -> b
 
+-- colori vari
 selezionato = (0,1,1)
 top = (0,0,1)
 text = (0,1,0)
@@ -32,11 +35,21 @@ renderIFigura co re (IFigura ifig isels iforw _ ) = renderFigura re'' ifig
 
 type RenderHelp b = [String] -> b
 
-renderWorld :: Monoid b => Colore b -> RenderHelp b -> Tree (Render b) -> Zipper IFigura -> b
-renderWorld co he re ca  = let
-    ps =  mconcat . map (renderIFigura co re) $ elementi ca
-    actual = renderIFigura co re . valore $ ca
-    in mconcat [co text $ he help, co (0.5,0.5,0.5) ps, co (0.1,0.1,0.1) actual]
+
+film = (0.7,0.7,0.7)
+
+renderMovie :: Monoid b => Tree (Render b) -> Tempo Normalizzato -> ((IFigura, Fulcrum), (IFigura, Fulcrum)) -> b
+renderMovie re t ((IFigura ifig _ _ back,fu), (IFigura ifig2 _ _ back2,_)) = let 
+	ifig' =  rotazioneInOrigine . routingPezzi undefined back $ assolutizza ifig
+	ifig'' =  rotazioneInOrigine . routingPezzi undefined back2 $ assolutizza ifig2
+	in   renderFigura re . generaPasso ifig' ifig'' fu $ t 
+
+renderWorld :: Monoid b => Colore b -> RenderHelp b -> Tree (Render b) -> World  -> b
+renderWorld co he re (World t z _) = let
+    xs = elementi z
+    ms = co film . mconcat . map (renderMovie re t) . zip xs $ tail xs
+    actual = renderIFigura co re . fst . valore $ z
+    in mconcat [co text $ he help,  actual, ms]
 
 help =  [   "S: select/deselect nearest to pointer piece for rotation"
         ,   "Space: deselect all pieces"

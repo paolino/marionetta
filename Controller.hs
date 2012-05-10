@@ -1,34 +1,26 @@
 {-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE GADTs #-}
 
-module Controller where
+module Controller (Evento (..), catchEvento, mkWorld, World (..), Lasso (..), Verso (..), updateTime) where
 
 
-import Control.Monad (msum)
-import Control.Arrow (first)
-import Control.Applicative ((<|>))
-import Data.Map (Map, empty,elems,insert,delete )
 import Data.Maybe (fromMaybe)
-import Data.Tree (Tree)
-
+import Control.Arrow (first, second) 
 
 import Data.List.Zipper (mkZipper, Zipper , inserisci, elimina, destra, sinistra, modifica)
-import Data.Tree.Missing (inspectTop , routingDumb, forward, backward,modifyTop, Routing)
-import Data.Zip (Selector, moveSelector, filterDuplicates, labella)
-import Model (Figura, ruotaScelto, vicino, Punto (..), Assoluto (..), Pezzo (..), assolutizza, relativizza)
-import IFigura
+import Data.Tree.Missing (inspectTop , forward, backward, topSelector)
+import Model (Figura,  Punto(..), vicino, assolutizza, Tempo (..), Normalizzato)
+import IFigura (IFigura(IFigura), ifigura , traslazione, rotazione, movimentoCentroTop, modificaSelettori, ricentra, iselectors)
+import Movie
 
-data MoveEffect = Ruotando Punto | Traslando Punto | SpostandoCentro Punto | Niente
+data MoveEffect = Ruotando Punto | Traslando Punto | SpostandoCentro Punto | SpostandoFulcrum Punto| Niente
 
-data World = World (Zipper IFigura) MoveEffect
-
+data World = World (Tempo Normalizzato) (Zipper (IFigura,Fulcrum)) MoveEffect 
 mkWorld :: Figura -> World 
 mkWorld fig = World 
-	(mkZipper $ IFigura fig [] (forward (inspectTop fig) fig) (backward (inspectTop fig) fig))
+	(Tempo 0)
+	(mkZipper $ (IFigura fig [] (forward (inspectTop fig) fig) (backward (inspectTop fig) fig),  Fulcrum (topSelector fig) $ Punto (0,0)))
 	Niente
-
-type Change = World -> World
 
 data Lasso = Inizio | Fine
 data Verso = Destra | Sinistra
@@ -46,33 +38,43 @@ data Evento where
 	Seleziona :: Punto -> Evento 
 	Deseleziona :: Evento
 	Silent :: Evento
+	SpostamentoFulcrum :: Punto -> Lasso -> Evento
+	RicentraFulcrum :: Punto -> Evento
 
-catch :: Evento -> Change
-catch Refresh (World z _) = World z Niente
-catch (Puntatore p) (World z Niente) = World z Niente
-catch (Puntatore p) (World z (Traslando q)) = World (modifica (traslazione q p) z) $ Traslando p 
-catch (Puntatore p) (World z (Ruotando q)) = World (modifica (rotazione q p) z) $ Ruotando p 
-catch (Puntatore p) (World z (SpostandoCentro q)) = World (modifica (movimentoCentroTop q p) z) $ SpostandoCentro p 
-catch (Rotazione p Inizio) (World z _) = World z (Ruotando p)
-catch (Rotazione p Fine) (World z (Ruotando _)) = World z Niente
-catch (Rotazione p Fine) w = w
-catch (Traslazione p Inizio) (World z _) = World z (Traslando p)
-catch (Traslazione p Fine) (World z (Traslando _)) = World z Niente
-catch (Traslazione p Fine) w = w
-catch (SpostamentoCentro p Inizio) (World z _) = World z (SpostandoCentro p)
-catch (SpostamentoCentro p Fine) (World z (SpostandoCentro _)) = World z Niente
-catch (SpostamentoCentro p Fine) w = w
-catch Cancella (World z m) = World (fromMaybe z $ elimina z) m
-catch Clona (World z m) = World (inserisci id z) m
-catch (Fuoco Destra) (World z m) = World (destra z) m
-catch (Fuoco Sinistra) (World z m) = World (sinistra z) m
-catch (Seleziona p) (World z m) = World (modifica (modificaSelettori p) z) m
-catch Deseleziona (World z m) = World (modifica f z) m where
+modificaIFigura  f = modifica $ first f
+modificaFulcrum f = modifica $ second f
+
+catchEvento :: Evento -> World -> World
+catchEvento Refresh (World t z _) = World t z Niente
+catchEvento (Puntatore p) (World t z Niente) = World t z Niente
+catchEvento (Puntatore p) (World t z (Traslando q)) = World t (modificaIFigura  (traslazione q p) z) $ Traslando p 
+catchEvento (Puntatore p) (World t z (Ruotando q)) = World t (modificaIFigura  (rotazione q p) z) $ Ruotando p 
+catchEvento (Puntatore p) (World t z (SpostandoCentro q)) = World t (modificaIFigura  (movimentoCentroTop q p) z) $ SpostandoCentro p 
+catchEvento (Puntatore p) (World t z (SpostandoFulcrum q)) = World t (modificaFulcrum  (\ful -> ful {fulcrum = q}) z) $ SpostandoFulcrum p 
+catchEvento (Rotazione p Inizio) (World t z _) = World t z (Ruotando p)
+catchEvento (Rotazione p Fine) (World t z (Ruotando _)) = World t z Niente
+catchEvento (Rotazione p Fine) w = w
+catchEvento (Traslazione p Inizio) (World t z _) = World t z (Traslando p)
+catchEvento (Traslazione p Fine) (World t z (Traslando _)) = World t z Niente
+catchEvento (Traslazione p Fine) w = w
+catchEvento (SpostamentoCentro p Inizio) (World t z _) = World t z (SpostandoCentro p)
+catchEvento (SpostamentoCentro p Fine) (World t z (SpostandoCentro _)) = World t z Niente
+catchEvento (SpostamentoCentro p Fine) w = w
+catchEvento Cancella (World t z m) = World t (fromMaybe z $ elimina z) m
+catchEvento Clona (World t z m) = World t (inserisci id z) m
+catchEvento (Fuoco Destra) (World t z m) = World t (destra z) m
+catchEvento (Fuoco Sinistra) (World t z m) = World t (sinistra z) m
+catchEvento (Seleziona p) (World t z m) = World t (modificaIFigura  (modificaSelettori p) z) m
+catchEvento Deseleziona (World t z m) = World t (modificaIFigura  f z) m where
 	f ifig = ifig {iselectors = []}
-catch (Ricentra p) (World z m)  = World (modifica (ricentra p) z) m
-catch Silent w = w
+catchEvento (Ricentra p) (World t z m)  = World t (modificaIFigura  (ricentra p) z) m
+catchEvento Silent w = w
+catchEvento (SpostamentoFulcrum p Inizio) (World t z _) = World t  z (SpostandoFulcrum p)
+catchEvento (SpostamentoFulcrum p Fine) (World t z (SpostandoFulcrum _)) = World t z Niente
+catchEvento (SpostamentoFulcrum p Fine) w = w
+catchEvento (RicentraFulcrum p) (World t z m)  = World t (modifica f z) m where
+	f (ifi, Fulcrum _ q) = (ifi, Fulcrum (vicino p (assolutizza $ ifigura ifi)) q)
 
-
-
-
-
+updateTime :: Float -> World -> World
+updateTime ((/3) -> t) (World (tempo -> t') z m) = World (Tempo t'') z m where
+	t'' = if t + t' > 1 then 0 else t + t'

@@ -1,22 +1,27 @@
+-----------------------------------------------------------------------------
+--
+-- Module      :  Data.Tree.Missing
+-- Copyright   :  Paolo Veronelli
+-- License     :  BSD3
+--
+-- Maintainer  :  paolo.veronelli@gmail.com
+-- Stability   :  Unstable
+-- Portability :  Portable
+--
+-- | Some operators for Tree structures.
 
-{-# LANGUAGE ScopedTypeVariables, NoMonomorphismRestriction #-}
+-----------------------------------------------------------------------------
 
--- | Some useful functions to work with Data.Tree.Tree
-module Data.Tree.Missing  where
-import Prelude hiding (mapM, zipWith)
+{-# LANGUAGE ScopedTypeVariables, NoMonomorphismRestriction, Rank2Types, ImpredicativeTypes #-}
+
+module Data.Tree.Missing (inspectTop, modifyTop, recurseTreeAccum, backward, forward, Routing, routingDumb, fromSelector, topSelector) where
+
+import Prelude hiding (zipWith)
+import Control.Monad (msum)
 import Data.List (splitAt,inits,tails)
-import Data.Tree
-import Data.Either
-import Control.Monad hiding (mapM)
-import Control.Applicative
-import Control.Arrow
-import Debug.Trace
-import Data.Foldable (toList)
-import Data.Traversable (mapAccumL, mapM)
-import Control.Monad.State.Lazy (evalState)
-import Control.Monad.State.Class (MonadState(..))
-import Data.Zip
-------------------------------------------------------------
+import Data.Tree (Tree (Node))
+
+import Data.Zip (Zip (..), labella, Selector , Label, mkSelector)
 
 
 
@@ -38,7 +43,6 @@ dropAt n xs = let (as,_:bs) = splitAt n xs in as ++ bs
 insertAt n x xs = let (as,bs) = splitAt n xs in as ++ x : bs
 replaceAt n x xs = let (as,_:bs) = splitAt n xs in as ++ x:bs
 
-type Ricentratore b =  Tree b -> Tree b
 
 forward :: (Eq a) => a -> Tree a -> Routing b
 forward y tr x0 f tr'@(Node x _) =   (,) x . fmap snd . maybe (error "missing element in ricentratore") id . move (const id) . zipWith (,) tr $ tr'
@@ -65,5 +69,14 @@ type Routing b =  b -> (b -> b -> b) -> Tree b -> (b , Tree b)
 
 routingDumb :: Routing b -> Tree b -> Tree b
 routingDumb r = snd . r undefined (const id)
+
+topSelector :: Tree a -> Selector Tree b
+topSelector t = mkSelector (==0) $ labella t
+
+fromSelector :: Tree a -> Selector Tree Label -> (forall c . Routing c, forall c . Routing c)
+fromSelector ifig ir = let
+	lifig = labella ifig
+	r = head $ snd (ir lifig)
+        in (forward r lifig, backward r lifig)
 
 

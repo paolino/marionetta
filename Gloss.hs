@@ -1,19 +1,18 @@
-
 {-# LANGUAGE ViewPatterns #-}
-module Gloss where
+module Gloss (gloss_run, gloss_implementazione) where
 
-
-import Prelude hiding (catch)
 import Data.Monoid (mconcat)
 
-import Graphics.Gloss
-import Graphics.Gloss.Interface.Game
+import Graphics.Gloss.Interface.Pure.Game 
+	(Picture(..), translate, rotate, color
+	, yellow, white, Event (..), play, Display (..)
+	, scale, blue, makeColor, Key (..), MouseButton (..), SpecialKey (..), KeyState (..))
 
-import View
-import Model 
-import Controller 
-import Run
-import Debug.Trace
+import View (RenderHelp, Colore, Render)
+import Model  (Punto(Punto), Pezzo(Pezzo))
+import Controller (Evento (..), Lasso (..), Verso (..))
+import Run (Run, Grafici(Gr), Geometrici (Ge), Implementazione (Implementazione))
+
 glCatch :: Event -> Evento
 
 glCatch (EventMotion (Punto -> p)) = Puntatore p
@@ -42,17 +41,14 @@ renderHelp help = mconcat [Color blue . translate (-250) (250-16*i) . scale 0.09
 elemento :: Grafici -> Picture
 elemento (Gr l u) = Scale (1/u) 1 $  Circle l
 
-renderPezzo :: Picture -> Render Picture
-renderPezzo pc (Pezzo (Punto (cx,cy)) (Punto (ox,oy)) alpha ) = Pictures
+renderPezzo :: Grafici -> Render Picture
+renderPezzo (elemento -> pc) (Pezzo (Punto (cx,cy)) (Punto (ox,oy)) alpha ) = Pictures
     [   translate ox oy . rotate (-alpha * 180 / pi) $ pc
     ,   translate cx cy . color yellow $ Circle 3
     ]
 
-render :: Grafici -> Render Picture
-render = renderPezzo . elemento
-
 gloss_implementazione :: Implementazione Picture Event
-gloss_implementazione = Implementazione render colore renderHelp glCatch
+gloss_implementazione = Implementazione renderPezzo colore renderHelp glCatch
 
 gloss_run :: String -> (Int,Int) -> (Int,Int) -> Run Picture Event
-gloss_run s c l w rew ce = gameInWindow s c l white 0 w rew ce (const id)
+gloss_run s c l w rew ce up = play (InWindow s c l) white 100 w rew ce up

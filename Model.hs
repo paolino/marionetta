@@ -3,46 +3,22 @@
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Model where -- (Punto (..), Semiretta (..), Angolo , TreePath, Tree, Accelerazione, configura, film) where
+module Model (Punto (..), Angolo, Pezzo (..), rotazioneInOrigine, routingPezzi
+	, ruotaScelto, vicino, Figura , relativizza, assolutizza, Assoluto, Relativo, Normalizzato,  Tempo (..) , interpolazione) where
 
 import Prelude hiding (zipWith)
+import Data.VectorSpace ((*^))
 import Data.Tree (Tree(..))
-import Data.Tree.Missing ( recurseTreeAccum, Routing, modifyTop)
+import Data.Tree.Missing ( recurseTreeAccum, Routing, modifyTop, inspectTop)
 import Control.Applicative ((<$>))
 import Control.Monad (ap)
 import Data.Foldable (minimumBy, toList)
 import Data.List.Zipper
 import Data.Ord (comparing)
 import Control.Arrow (Arrow(..))
-import Debug.Trace
+import Math
 import Data.Zip
-
--- | un punto nel piano 2d ascissa e ordinata o anche un vettore
-newtype Punto = Punto (Float,Float) deriving (Eq,Show, Read)
-
--- | un angolo
-type Angolo = Float
-
--- campo dei Punto
-instance Num Punto where
-	(+) (Punto (x,y)) (Punto (x1,y1)) = Punto (x+x1,y+y1)
-	negate (Punto (x,y)) = Punto (negate x,negate y)
-	(*) = error "Punto Num method undefined used"
-	abs x = error $ "abs :" ++ show x ++  " Punto Num method undefined used"
-	signum = error "signum : Punto Num method undefined used"
-	fromInteger x = error $ "fromInteger " ++ show x ++ ": Punto Num method undefined used"
-
-
-type Ruota = Punto -> Punto
-
--- rotazione intorno all'origine
-ruota :: Angolo -> Ruota
-ruota alpha (Punto (x,y))= Punto (cos alpha * x - sin alpha * y, sin alpha * x + cos alpha * y)
-
-
--- modulo di un vettore
-modulus :: Punto -> Float
-modulus (Punto (x,y)) = sqrt (x ^ 2 + y ^ 2)
+import Debug.Trace
 
 data Relativo
 data Assoluto
@@ -52,9 +28,6 @@ data Pezzo a = Pezzo
     ,    originePezzo ::  Punto
     ,    rotazionePezzo :: Angolo
     } deriving (Show,Read,Eq)
-
-
-
 
 
 assolutizza :: Tree (Pezzo Relativo) -> Tree (Pezzo Assoluto)
@@ -97,12 +70,19 @@ tf g (Tempo x) (Tempo y) = Tempo (x `g` y)
 (.-.) :: Tempo Assoluto -> Tempo Assoluto -> Tempo Relativo
 (.-.) = tf (-)
 
+normalizzaAngolo alpha
+	| alpha < -pi = normalizzaAngolo $ alpha + 2 * pi
+	| alpha > pi = normalizzaAngolo $ alpha - 2 * pi
+	| otherwise = alpha
 interpolazione      :: Tree (Pezzo Relativo)
                     -> Tree (Pezzo Relativo)
                     -> Tempo Normalizzato
                     -> Tree (Pezzo Relativo)
-interpolazione t1 t2 t = aggiorna $ zipWith variazioneAngolo  t1 t2 where
-    variazioneAngolo p p' = ((rotazionePezzo p' - rotazionePezzo p) /  tempo t, p)
+interpolazione t1 t2 t = modifyTop (\(Pezzo _ r alpha) -> Pezzo (l t) r alpha) . aggiorna $ zipWith variazioneAngolo  t1 t2 where
+    variazioneAngolo p p' = (tempo t * ((normalizzaAngolo $ rotazionePezzo p') - (normalizzaAngolo $ rotazionePezzo p)), p)
+    l t = l0 + tempo t *^ (l1 - l0) 
+    l0 = fulcroPezzo (inspectTop t1)
+    l1 = fulcroPezzo (inspectTop t2)
 
 type Figura = Tree (Pezzo Relativo)
 

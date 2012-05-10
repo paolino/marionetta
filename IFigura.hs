@@ -1,22 +1,11 @@
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE ImpredicativeTypes #-}
 
 module IFigura where
 
-
-import Control.Monad (msum)
-import Control.Arrow (first)
-import Control.Applicative ((<|>))
-import Data.Map (Map, empty,elems,insert,delete )
-import Data.Maybe (fromMaybe)
 import Data.Tree (Tree)
-
-import Graphics.Gloss.Interface.Game (Event (..), MouseButton (..), Key (..), KeyState (..))
-
-import Data.List.Zipper (Zipper , inserisci, elimina, destra, sinistra, modifica)
-import Data.Tree.Missing (routingDumb, forward, backward,modifyTop, Routing)
+import Data.Tree.Missing (routingDumb, forward, backward,modifyTop, Routing, fromSelector)
 import Data.Zip (Selector, moveSelector, filterDuplicates, labella)
 import Model (Figura, ruotaScelto, vicino, Punto (..), Pezzo (..), assolutizza, relativizza,rotazioneInOrigine, routingPezzi)
 
@@ -32,11 +21,8 @@ ricentra :: Punto -> IFigura -> IFigura
 ricentra l (IFigura ifig isels _ ibackw ) = let
             ifig' = rotazioneInOrigine . routingPezzi undefined ibackw $ assolutizza ifig
             isels' = map (moveSelector ifig $ routingDumb ibackw) isels
-            ir = vicino l ifig'
-            lifig = labella [0..] ifig'
-            c = head $ snd (ir lifig)
-            iforw =  forward c lifig
-            ibackw' =  backward c lifig
+            ir = vicino l ifig' 
+            (iforw , ibackw') = fromSelector ifig' ir 
             ifig'' = relativizza . rotazioneInOrigine . routingPezzi undefined iforw $ ifig'
             isels'' = map (moveSelector ifig' $ routingDumb iforw) isels'
             in  IFigura ifig'' isels'' iforw ibackw'
