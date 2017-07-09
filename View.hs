@@ -40,9 +40,9 @@ film = (0.7,0.7,0.7)
 
 renderMovie :: Monoid b => Tree (Render b) -> Tempo Normalizzato -> ((IFigura, Fulcrum), (IFigura, Fulcrum)) -> b
 renderMovie re t ((IFigura ifig _ _ back,fu), (IFigura ifig2 _ _ back2,_)) = let 
-	ifig' =  rotazioneInOrigine . routingPezzi undefined back $ assolutizza ifig
-	ifig'' =  rotazioneInOrigine . routingPezzi undefined back2 $ assolutizza ifig2
-	in   renderFigura re . generaPasso ifig' ifig'' fu $ t 
+    ifig' =  rotazioneInOrigine . routingPezzi undefined back $ assolutizza ifig
+    ifig'' =  rotazioneInOrigine . routingPezzi undefined back2 $ assolutizza ifig2
+    in   renderFigura re . generaPasso ifig' ifig'' fu $ t 
 
 renderWorld :: Monoid b => Colore b -> RenderHelp b -> Tree (Render b) -> World  -> b
 renderWorld co he re (World t z _) = let

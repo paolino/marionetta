@@ -4,7 +4,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Model (Punto (..), Angolo, Pezzo (..), rotazioneInOrigine, routingPezzi
-	, ruotaScelto, vicino, Figura , relativizza, assolutizza, Assoluto, Relativo, Normalizzato,  Tempo (..) , interpolazione) where
+    , ruotaScelto, vicino, Figura , relativizza, assolutizza, Assoluto, Relativo, Normalizzato,  Tempo (..) , interpolazione) where
 
 import Prelude hiding (zipWith)
 import Data.VectorSpace ((*^))
@@ -71,9 +71,9 @@ tf g (Tempo x) (Tempo y) = Tempo (x `g` y)
 (.-.) = tf (-)
 
 normalizzaAngolo alpha
-	| alpha < -pi = normalizzaAngolo $ alpha + 2 * pi
-	| alpha > pi = normalizzaAngolo $ alpha - 2 * pi
-	| otherwise = alpha
+    | alpha < -pi = normalizzaAngolo $ alpha + 2 * pi
+    | alpha > pi = normalizzaAngolo $ alpha - 2 * pi
+    | otherwise = alpha
 interpolazione      :: Tree (Pezzo Relativo)
                     -> Tree (Pezzo Relativo)
                     -> Tempo Normalizzato

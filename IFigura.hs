@@ -49,11 +49,11 @@ rotazione l l' (IFigura ifig ir iforw ibackw) = let
 
 movimentoCentroTop :: Movimento IFigura
 movimentoCentroTop l l' (IFigura ifig ir iforw ibackw) = IFigura ifig' ir iforw ibackw 
-	where ifig' = relativizza . modifyTop (\(Pezzo _ o alpha) -> Pezzo l o alpha) . assolutizza $ ifig
+    where ifig' = relativizza . modifyTop (\(Pezzo _ o alpha) -> Pezzo l o alpha) . assolutizza $ ifig
 
 
 modificaSelettori l (IFigura ifig ir iforw ibackw) = IFigura ifig (filterDuplicates ifig (ir':ir)) iforw ibackw where
-		ir' = vicino l . assolutizza $ ifig
+        ir' = vicino l . assolutizza $ ifig
 
 
 

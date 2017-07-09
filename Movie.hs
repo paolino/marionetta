@@ -38,15 +38,15 @@ splines x (y:ys) = fmap (spline x) . foldr (zipWith (:)) (fmap return y) $ ys
 splines x [] = error "empty movie to spline"
 
 generaPasso :: Tree (Pezzo Assoluto) -> Tree (Pezzo Assoluto)  -> Fulcrum -> Tempo Normalizzato -> Figura 
-generaPasso fp fa (Fulcrum s p) = let	
-	(forw,_) = fromSelector fp s
-	fp' = relativizza $ fp
-	fa' = relativizza $ fa
-	in interpolazione fp' fa'
+generaPasso fp fa (Fulcrum s p) = let    
+    (forw,_) = fromSelector fp s
+    fp' = relativizza $ fp
+    fa' = relativizza $ fa
+    in interpolazione fp' fa'
 
 data Fulcrum = Fulcrum 
-	  	{	legato :: Selector Tree Label
-		,	fulcrum :: Punto
-		}
+          {    legato :: Selector Tree Label
+        ,    fulcrum :: Punto
+        }
 
-		
+        

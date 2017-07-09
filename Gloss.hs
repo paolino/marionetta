@@ -4,9 +4,9 @@ module Gloss (gloss_run, gloss_implementazione) where
 import Data.Monoid (mconcat)
 
 import Graphics.Gloss.Interface.Pure.Game 
-	(Picture(..), translate, rotate, color
-	, yellow, white, Event (..), play, Display (..)
-	, scale, blue, makeColor, Key (..), MouseButton (..), SpecialKey (..), KeyState (..))
+    (Picture(..), translate, rotate, color
+    , yellow, white, Event (..), play, Display (..)
+    , scale, blue, makeColor, Key (..), MouseButton (..), SpecialKey (..), KeyState (..))
 
 import View (RenderHelp, Colore, Render)
 import Model  (Punto(Punto), Pezzo(Pezzo))

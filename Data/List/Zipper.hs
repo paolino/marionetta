@@ -19,7 +19,7 @@ module Data.List.Zipper where
 
 data Zipper a = Zipper [a] [a] 
 instance Functor Zipper where
-	fmap f (Zipper xs ys) = Zipper (fmap f xs) (fmap f ys)
+    fmap f (Zipper xs ys) = Zipper (fmap f xs) (fmap f ys)
 
 sinistra z@(Zipper [] _) = z
 sinistra (Zipper (x:xs) ys) = Zipper xs (x:ys)

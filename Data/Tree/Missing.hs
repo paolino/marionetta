@@ -77,8 +77,8 @@ topSelector t = mkSelector (==0) $ labella t
 newtype IRouting = IRouting (forall c . Routing c)
 fromSelector :: Tree a -> Selector Tree Label -> (IRouting , IRouting)
 fromSelector ifig ir = let
-	lifig = labella ifig
-	r = head $ snd (ir lifig)
+    lifig = labella ifig
+    r = head $ snd (ir lifig)
         in (IRouting $ forward r lifig, IRouting $ backward r lifig)
 
 

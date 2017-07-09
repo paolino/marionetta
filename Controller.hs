@@ -18,28 +18,28 @@ data MoveEffect = Ruotando Punto | Traslando Punto | SpostandoCentro Punto | Spo
 data World = World (Tempo Normalizzato) (Zipper (IFigura,Fulcrum)) MoveEffect 
 mkWorld :: Figura -> World 
 mkWorld fig = World 
-	(Tempo 0)
-	(mkZipper $ (IFigura fig [] (forward (inspectTop fig) fig) (backward (inspectTop fig) fig),  Fulcrum (topSelector fig) $ Punto (0,0)))
-	Niente
+    (Tempo 0)
+    (mkZipper $ (IFigura fig [] (forward (inspectTop fig) fig) (backward (inspectTop fig) fig),  Fulcrum (topSelector fig) $ Punto (0,0)))
+    Niente
 
 data Lasso = Inizio | Fine
 data Verso = Destra | Sinistra
 
 data Evento where
-	Refresh ::  Evento 
-	Puntatore :: Punto -> Evento 
-	Rotazione :: Punto -> Lasso -> Evento 
-	Traslazione :: Punto -> Lasso -> Evento 
-	SpostamentoCentro :: Punto -> Lasso -> Evento 
-	Cancella :: Evento 
-	Clona :: Evento 
-	Fuoco :: Verso -> Evento 
-	Ricentra :: Punto -> Evento 
-	Seleziona :: Punto -> Evento 
-	Deseleziona :: Evento
-	Silent :: Evento
-	SpostamentoFulcrum :: Punto -> Lasso -> Evento
-	RicentraFulcrum :: Punto -> Evento
+    Refresh ::  Evento 
+    Puntatore :: Punto -> Evento 
+    Rotazione :: Punto -> Lasso -> Evento 
+    Traslazione :: Punto -> Lasso -> Evento 
+    SpostamentoCentro :: Punto -> Lasso -> Evento 
+    Cancella :: Evento 
+    Clona :: Evento 
+    Fuoco :: Verso -> Evento 
+    Ricentra :: Punto -> Evento 
+    Seleziona :: Punto -> Evento 
+    Deseleziona :: Evento
+    Silent :: Evento
+    SpostamentoFulcrum :: Punto -> Lasso -> Evento
+    RicentraFulcrum :: Punto -> Evento
 
 modificaIFigura  f = modifica $ first f
 modificaFulcrum f = modifica $ second f
@@ -66,15 +66,15 @@ catchEvento (Fuoco Destra) (World t z m) = World t (destra z) m
 catchEvento (Fuoco Sinistra) (World t z m) = World t (sinistra z) m
 catchEvento (Seleziona p) (World t z m) = World t (modificaIFigura  (modificaSelettori p) z) m
 catchEvento Deseleziona (World t z m) = World t (modificaIFigura  f z) m where
-	f ifig = ifig {iselectors = []}
+    f ifig = ifig {iselectors = []}
 catchEvento (Ricentra p) (World t z m)  = World t (modificaIFigura  (ricentra p) z) m
 catchEvento Silent w = w
 catchEvento (SpostamentoFulcrum p Inizio) (World t z _) = World t  z (SpostandoFulcrum p)
 catchEvento (SpostamentoFulcrum p Fine) (World t z (SpostandoFulcrum _)) = World t z Niente
 catchEvento (SpostamentoFulcrum p Fine) w = w
 catchEvento (RicentraFulcrum p) (World t z m)  = World t (modifica f z) m where
-	f (ifi, Fulcrum _ q) = (ifi, Fulcrum (vicino p (assolutizza $ ifigura ifi)) q)
+    f (ifi, Fulcrum _ q) = (ifi, Fulcrum (vicino p (assolutizza $ ifigura ifi)) q)
 
 updateTime :: Float -> World -> World
 updateTime ((/3) -> t) (World (tempo -> t') z m) = World (Tempo t'') z m where
-	t'' = if t + t' > 1 then 0 else t + t'
+    t'' = if t + t' > 1 then 0 else t + t'
