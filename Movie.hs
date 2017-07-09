@@ -12,7 +12,7 @@ import Math.Spline.Knots (Knots)
 
 import Data.Tree
 
-import Data.Vector (fromList)
+import Data.Vector (fromList, Vector)
 
 import Math 
 
@@ -27,13 +27,13 @@ import Data.Zip
 type Index = Int
 
 
-spline :: Knots Float -> [Pezzo Assoluto] -> BSpline Punto
+spline :: Knots Float -> [Pezzo Assoluto] -> BSpline Vector Punto
 spline x = bSpline x . fromList . map originePezzo 
 
 
 type Movie = [Tree (Pezzo Assoluto)]
 
-splines :: Knots Float -> Movie -> Tree (BSpline Punto)
+splines :: Knots Float -> Movie -> Tree (BSpline Vector Punto)
 splines x (y:ys) = fmap (spline x) . foldr (zipWith (:)) (fmap return y) $ ys
 splines x [] = error "empty movie to spline"
 

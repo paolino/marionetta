@@ -5,7 +5,7 @@
 module IFigura where
 
 import Data.Tree (Tree)
-import Data.Tree.Missing (routingDumb, forward, backward,modifyTop, Routing, fromSelector)
+import Data.Tree.Missing (routingDumb, forward, backward,modifyTop, Routing, fromSelector, IRouting (..))
 import Data.Zip (Selector, moveSelector, filterDuplicates, labella)
 import Model (Figura, ruotaScelto, vicino, Punto (..), Pezzo (..), assolutizza, relativizza,rotazioneInOrigine, routingPezzi)
 
@@ -22,7 +22,7 @@ ricentra l (IFigura ifig isels _ ibackw ) = let
             ifig' = rotazioneInOrigine . routingPezzi undefined ibackw $ assolutizza ifig
             isels' = map (moveSelector ifig $ routingDumb ibackw) isels
             ir = vicino l ifig' 
-            (iforw , ibackw') = fromSelector ifig' ir 
+            (IRouting iforw , IRouting ibackw') = fromSelector ifig' ir 
             ifig'' = relativizza . rotazioneInOrigine . routingPezzi undefined iforw $ ifig'
             isels'' = map (moveSelector ifig' $ routingDumb iforw) isels'
             in  IFigura ifig'' isels'' iforw ibackw'

@@ -12,9 +12,10 @@
 
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE ScopedTypeVariables, NoMonomorphismRestriction, Rank2Types, ImpredicativeTypes #-}
+{-# LANGUAGE ScopedTypeVariables, NoMonomorphismRestriction, Rank2Types #-}
 
-module Data.Tree.Missing (inspectTop, modifyTop, recurseTreeAccum, backward, forward, Routing, routingDumb, fromSelector, topSelector) where
+module Data.Tree.Missing (inspectTop, modifyTop, recurseTreeAccum, backward, forward, 
+    Routing, routingDumb, fromSelector, topSelector, IRouting (..)) where
 
 import Prelude hiding (zipWith)
 import Control.Monad (msum)
@@ -73,10 +74,11 @@ routingDumb r = snd . r undefined (const id)
 topSelector :: Tree a -> Selector Tree b
 topSelector t = mkSelector (==0) $ labella t
 
-fromSelector :: Tree a -> Selector Tree Label -> (forall c . Routing c, forall c . Routing c)
+newtype IRouting = IRouting (forall c . Routing c)
+fromSelector :: Tree a -> Selector Tree Label -> (IRouting , IRouting)
 fromSelector ifig ir = let
 	lifig = labella ifig
 	r = head $ snd (ir lifig)
-        in (forward r lifig, backward r lifig)
+        in (IRouting $ forward r lifig, IRouting $ backward r lifig)
 
 
